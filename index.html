@@ -561,6 +561,11 @@
   const SLACK = ['摆烂', '摸鱼', '追番', '旮旯给木', '鸽视频', '观星占卜', '健身', '炒股', '赶ddl'];
   const FOCUS = ['自习', '泡图书馆', '上课', '搬砖', 'vibe coding', '发呆'];
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const fixed = new Map();                               // 每个类别只在本次打开时随机一次，之后固定
+  const pickOnce = (key, a) => {
+    if (!fixed.has(key)) fixed.set(key, pick(a));
+    return fixed.get(key);
+  };
   const bjHour = () => {
     const s = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Shanghai', hour: '2-digit', hour12: false }).format(new Date());
     return parseInt(s, 10) % 24;
@@ -573,8 +578,8 @@
     let text;
     if (h >= 1 && h < 7) text = '主人在睡觉喵，请勿打扰';
     else if (h === 7 || h === 12 || h === 18) text = '主人在吃饭喵，请勿打扰';
-    else if (h >= 19 || h < 1) text = '主人在' + pick(SLACK) + '喵，请勿打扰';
-    else text = '主人在' + pick(FOCUS) + '喵，请勿打扰';
+    else if (h >= 19 || h < 1) text = '主人在' + pickOnce('slack', SLACK) + '喵，请勿打扰';
+    else text = '主人在' + pickOnce('focus', FOCUS) + '喵，请勿打扰';
     statusEl.replaceChildren(document.createTextNode(text), tz);
   };
   paint(); setInterval(paint, 60000);
