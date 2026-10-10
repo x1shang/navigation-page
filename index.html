@@ -4,144 +4,398 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>我们都.是.gay</title>
-<meta name="description" content="我们都.是.gay — 站点建设中">
-<!-- 内联 SVG 图标，避免额外请求和 favicon 404 -->
+<meta name="description" content="我们都.是.gay — 入口页。这里放我做的各种网页。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6ec7'/%3E%3Cstop offset='.5' stop-color='%23a78bfa'/%3E%3Cstop offset='1' stop-color='%2367e8f9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230d0d16'/%3E%3Ccircle cx='50' cy='50' r='24' fill='none' stroke='url(%23g)' stroke-width='9'/%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#0a0a11;
-    --card:rgba(255,255,255,.045);
-    --line:rgba(255,255,255,.09);
+    --bg:#08080e;
     --fg:#ececf4;
     --dim:#9a9ab0;
+    --line:rgba(255,255,255,.10);
+    --tile:rgba(255,255,255,.045);
+    --gap:12px;
+    --u:96px;                 /* 磁贴单位尺寸（Win10 小磁贴的边长） */
+    --mx:50vw; --my:30vh;     /* 指针位置，驱动背景光斑与遮罩 */
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
     margin:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-    background:
-      radial-gradient(60rem 40rem at 15% -10%, rgba(255,110,199,.18), transparent 60%),
-      radial-gradient(55rem 38rem at 90% 110%, rgba(103,232,249,.16), transparent 60%),
-      radial-gradient(40rem 30rem at 60% 40%, rgba(167,139,250,.10), transparent 65%),
-      var(--bg);
+    background:var(--bg);
     color:var(--fg);
-    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
   }
-  .card{
+
+  /* ───────── 背景动态光效 ───────── */
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{position:absolute;left:0;top:0;width:56vmax;height:56vmax;border-radius:50%;filter:blur(90px);opacity:.55;
+        transform:translate3d(-50%,-50%,0);will-change:transform}
+  .b1{background:radial-gradient(circle,rgba(255,110,199,.55),transparent 62%)}
+  .b2{background:radial-gradient(circle,rgba(103,232,249,.42),transparent 62%)}
+  .spot{position:absolute;left:0;top:0;width:30vmax;height:30vmax;border-radius:50%;filter:blur(38px);opacity:.9;
+        background:radial-gradient(circle,rgba(255,255,255,.14),transparent 62%);
+        transform:translate3d(-50%,-50%,0) translate(-50%,-50%);will-change:transform}
+  .mesh{position:absolute;inset:0;opacity:.30;
+        background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+                         linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+        background-size:calc(var(--u)/2) calc(var(--u)/2);
+        -webkit-mask-image:radial-gradient(circle at var(--mx) var(--my),#000 0%,transparent 72%);
+                mask-image:radial-gradient(circle at var(--mx) var(--my),#000 0%,transparent 72%)}
+  .vignette{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 0%,transparent 40%,rgba(0,0,0,.55) 100%)}
+
+  /* ───────── 版面 ───────── */
+  main{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:56px 24px 72px}
+  header{text-align:center;margin-bottom:44px}
+  .bar{width:72px;height:3px;margin:0 auto 26px;border-radius:99px;opacity:.9;
+       background:linear-gradient(90deg,#ff6ec7,#f9a8d4,#a78bfa,#67e8f9)}
+  h1{margin:0 0 10px;font-size:clamp(26px,5.2vw,42px);font-weight:700;letter-spacing:-.01em;
+     background:linear-gradient(100deg,#ffd9f0,#e9d5ff 45%,#cffafe);
+     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .host{margin:0;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--dim);word-break:break-all}
+  .status{margin:14px 0 0;font-size:12.5px;color:#6f6f85;letter-spacing:.02em}
+  .status b{color:#a5b4fc;font-weight:600}
+
+  /* ───────── 磁贴网格 ───────── */
+  .tiles{
+    display:grid;
+    grid-template-columns:repeat(var(--cols,4),var(--u));
+    grid-auto-rows:var(--u);
+    gap:var(--gap);
+    grid-auto-flow:dense;            /* 不同尺寸交错时自动补缝 */
+    width:max-content;max-width:100%;
+    margin:0 auto 34px;
+  }
+  .tile{
+    --tx:50%; --ty:50%;              /* 磁贴内光斑的位置 */
     position:relative;
-    width:100%;
-    max-width:620px;
-    padding:44px 40px 38px;
+    grid-column:span var(--w,2);
+    grid-row:span var(--h,2);
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:14px 15px;
     border:1px solid var(--line);
-    border-radius:22px;
-    background:var(--card);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    box-shadow:0 30px 90px -40px rgba(0,0,0,.9);
+    border-radius:8px;
+    background:
+      radial-gradient(160px 160px at var(--tx) var(--ty),color-mix(in oklab,var(--accent) 26%,transparent),transparent 68%),
+      var(--tile);
+    -webkit-backdrop-filter:blur(14px) saturate(1.3);
+            backdrop-filter:blur(14px) saturate(1.3);
+    color:var(--fg);
+    text-decoration:none;
     overflow:hidden;
-    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .28s ease;
+    animation:tile-in .5s cubic-bezier(.2,.7,.3,1) backwards;
   }
-  /* 顶部一道很细的彩虹线，只为 .gay 这个域名点题 */
-  .card::before{
-    content:"";
-    position:absolute;
-    inset:0 0 auto;
-    height:3px;
-    background:linear-gradient(90deg,#ff6ec7,#f9a8d4,#a78bfa,#67e8f9);
-    opacity:.85;
+  @keyframes tile-in{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+  .tile:hover{
+    transform:translateY(-2px);
+    border-color:color-mix(in oklab,var(--accent) 58%,transparent);
+    box-shadow:0 20px 46px -24px var(--accent),
+               inset 0 0 0 1px color-mix(in oklab,var(--accent) 22%,transparent);
   }
-  .pill{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:5px 13px;
-    border:1px solid var(--line);
-    border-radius:999px;
-    color:var(--dim);
-    font-size:13px;
-    letter-spacing:.02em;
-  }
-  .dot{
-    width:7px;height:7px;border-radius:50%;
-    background:#4ade80;
-    box-shadow:0 0 0 0 rgba(74,222,128,.6);
-    animation:pulse 2.4s ease-out infinite;
-  }
-  @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(74,222,128,.55)}
-    70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}
-    100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}
-  }
-  h1{
-    margin:22px 0 6px;
-    font-size:clamp(26px,6vw,40px);
-    line-height:1.25;
-    font-weight:700;
-    letter-spacing:-.01em;
-    background:linear-gradient(100deg,#ffd9f0,#e9d5ff 45%,#cffafe);
-    -webkit-background-clip:text;
-    background-clip:text;
-    color:transparent;
-  }
-  .sub{margin:0 0 22px;color:var(--dim);font-size:15px}
-  .rule{
-    width:64px;height:1px;margin:0 auto 24px;
-    background:linear-gradient(90deg,transparent,var(--line),transparent);
-  }
-  .big{
-    margin:0 0 10px;
-    font-size:clamp(20px,4.6vw,26px);
-    font-weight:600;
-    letter-spacing:.04em;
-  }
-  .en{margin:0;color:var(--dim);font-size:14px;letter-spacing:.12em;text-transform:uppercase}
-  .host{
-    display:inline-block;
-    margin-top:26px;
-    padding:9px 15px;
-    border:1px dashed var(--line);
-    border-radius:12px;
-    color:var(--dim);
-    font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    word-break:break-all;
-  }
-  footer{margin-top:26px;color:#6f6f85;font-size:12.5px}
-  a{color:#c9b6ff;text-decoration:none;border-bottom:1px solid rgba(201,182,255,.35)}
-  a:hover{border-bottom-color:#c9b6ff}
-  @media (max-width:480px){
-    .card{padding:34px 22px 30px;border-radius:18px}
-  }
+  .tile:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 70%,transparent);outline-offset:3px}
+  .tile::after{ /* 顶部一道极细的 accent 线，让"透明玻璃"有边 */
+    content:"";position:absolute;inset:0 0 auto;height:1px;
+    background:linear-gradient(90deg,transparent,color-mix(in oklab,var(--accent) 65%,transparent),transparent);
+    opacity:.55;transition:opacity .2s}
+  .tile:hover::after{opacity:1}
+
+  .ico{width:min(40%,86px);height:auto;color:var(--accent);
+       filter:drop-shadow(0 0 14px color-mix(in oklab,var(--accent) 45%,transparent));
+       transition:transform .2s ease}
+  .ico svg{display:block;width:100%;height:auto}
+  .tile:hover .ico{transform:scale(1.06)}
+  .txt{min-width:0}
+  .label{display:block;font-weight:650;font-size:13.5px;line-height:1.35;letter-spacing:.01em;
+         overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sub{display:block;font-size:11.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* 1×1 只留图标，像 Win10 的小磁贴 */
+  .tile[data-w="1"][data-h="1"]{align-items:center;justify-content:center;padding:10px}
+  .tile[data-w="1"][data-h="1"] .ico{width:52%}
+  .tile[data-w="1"][data-h="1"] .txt{display:none}
+  .tile[data-h="1"] .sub{display:none}
+
+  /* 改尺寸手柄 */
+  .handle{position:absolute;right:0;bottom:0;width:28px;height:28px;cursor:nwse-resize;
+          opacity:0;transition:opacity .15s;touch-action:none}
+  .handle::after{content:"";position:absolute;right:6px;bottom:6px;width:9px;height:9px;
+                 border-right:2px solid rgba(255,255,255,.5);border-bottom:2px solid rgba(255,255,255,.5);
+                 border-radius:0 0 2px 0}
+  .tile:hover .handle,.tile:focus-within .handle{opacity:1}
+  .tiles.resizing{cursor:nwse-resize}
+  .tiles.resizing .tile{transition:none}
+  .tiles.resizing .tile:hover{transform:none}
+
+  /* 拖动时右上角显示实时尺寸 */
+  .tile[data-tip]::before{
+    content:attr(data-tip);position:absolute;top:9px;right:10px;z-index:2;
+    font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--accent);
+    background:rgba(0,0,0,.45);border:1px solid color-mix(in oklab,var(--accent) 45%,transparent);
+    border-radius:6px;padding:1px 7px}
+
+  .badge{position:absolute;top:10px;right:10px;padding:2px 8px;border-radius:99px;font-size:10.5px;
+         letter-spacing:.04em;color:#fbbf24;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.10)}
+
+  /* 待接入的磁贴 */
+  .tile.todo{--accent:#fbbf24;cursor:not-allowed;
+             background:repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 10px,transparent 10px 20px),var(--tile)}
+  .tile.todo .ico{opacity:.6}
+  .tile.todo:hover{transform:none;border-color:var(--line);box-shadow:none}
+
+  /* ───────── 页脚 ───────── */
+  footer{text-align:center;color:#6f6f85;font-size:12.5px}
+  .actions{display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+  button{font:inherit;font-size:12.5px;color:var(--fg);background:var(--tile);border:1px solid var(--line);
+         padding:7px 15px;border-radius:99px;cursor:pointer;transition:border-color .15s,background .15s;
+         -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  button:hover{border-color:rgba(201,182,255,.5);background:rgba(255,255,255,.07)}
+  .hint{margin:0;line-height:1.9}
+  kbd{font:11.5px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--dim)}
+
+  @media (max-width:760px){:root{--u:84px}}
+  @media (max-width:520px){:root{--u:74px;--gap:10px}main{padding:36px 16px 56px}}
   @media (prefers-reduced-motion:reduce){
-    .dot{animation:none}
+    .tile{animation:none;transition:none}
+    .blob,.spot{transition:none}
   }
 </style>
 </head>
 <body>
-  <main class="card">
-    <span class="pill"><span class="dot" aria-hidden="true"></span>占位页已上线</span>
 
+<!-- 背景：跟随指针的光斑 + 网格 -->
+<div class="glow" aria-hidden="true">
+  <div class="blob b1" id="b1"></div>
+  <div class="blob b2" id="b2"></div>
+  <div class="spot" id="spot"></div>
+  <div class="mesh"></div>
+  <div class="vignette"></div>
+</div>
+
+<main>
+  <header>
+    <div class="bar"></div>
     <h1>我们都.是.gay</h1>
-    <p class="sub">域名解析已就位，站点正在搭建</p>
-
-    <div class="rule" aria-hidden="true"></div>
-
-    <p class="big">建设中</p>
-    <p class="en">Under construction</p>
-
     <p class="host">xn--vnqp08bwj8a.xn--0iv.gay</p>
+    <p class="status"><b>3</b> 个入口已上线 · <b>1</b> 个待接入 · 本地时间 <span id="clock">--:--</span></p>
+  </header>
 
-    <footer>换了内容，这个页面就该退休了 · <span id="y">2026</span></footer>
-  </main>
+  <nav class="tiles" id="tiles" aria-label="入口磁贴">
 
-  <script>
-    // 只做一件事：年份别写死
-    document.getElementById('y').textContent = new Date().getFullYear();
-  </script>
+    <a class="tile" href="./sorting/" data-id="sorting" data-w="2" data-h="2"
+       style="--accent:#ff6ec7;animation-delay:.02s" draggable="false">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
+        stroke-width="2.8" stroke-linecap="round">
+        <path d="M9 40V30"/><path d="M16.5 40V24"/><path d="M24 40V15"/><path d="M31.5 40V22"/><path d="M39 40V9"/>
+      </svg></span>
+      <span class="txt"><span class="label">排序可视化</span><span class="sub">从无序到有序</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </a>
+
+    <a class="tile" href="./lujiazui/" data-id="lujiazui" data-w="2" data-h="2"
+       style="--accent:#67e8f9;animation-delay:.08s" draggable="false">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
+        stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M6 40h36"/>
+        <path d="M10 40V26l4-3 4 3v14"/>
+        <path d="M22 40V14l3.5-5L29 14v26"/>
+        <path d="M33 40V22h7v18"/>
+        <circle cx="25.5" cy="8" r="1.6" fill="currentColor" stroke="none"/>
+      </svg></span>
+      <span class="txt"><span class="label">陆家嘴 · 城市剖面</span><span class="sub">Lujiazui Atlas</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </a>
+
+    <a class="tile" href="./threebody/" data-id="threebody" data-w="2" data-h="2"
+       style="--accent:#a78bfa;animation-delay:.14s" draggable="false">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linejoin="round">
+        <circle cx="24" cy="24" r="5.5"/>
+        <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(-20 24 24)"/>
+        <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(60 24 24)"/>
+        <circle cx="42" cy="17" r="3" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="7" r="2.2" fill="currentColor" stroke="none"/>
+      </svg></span>
+      <span class="txt"><span class="label">三体 · 地表观测站</span><span class="sub">Three-Body Simulator</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </a>
+
+    <div class="tile todo" data-id="campus-desk" data-w="2" data-h="2" style="animation-delay:.20s"
+         title="服务端渲染应用（Cloudflare Workers + 数据库），GitHub Pages 放不了；独立部署后把链接填进来即可">
+      <span class="badge">需服务器</span>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
+        stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+        <rect x="7" y="13" width="34" height="21" rx="2.5"/>
+        <path d="M19 40h10"/><path d="M24 34v6"/>
+        <path d="M14 21h9"/><path d="M14 27h13"/>
+      </svg></span>
+      <span class="txt"><span class="label">校园桌面</span><span class="sub">待接入 · 需要服务器</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </div>
+
+  </nav>
+
+  <footer>
+    <div class="actions">
+      <button id="reset" type="button">重置磁贴布局</button>
+    </div>
+    <p class="hint">
+      拖动磁贴右下角 <span aria-hidden="true">◢</span> 调整大小 · 双击手柄复位该磁贴 · 布局只存在你自己的浏览器里<br>
+      选中磁贴后按 <kbd>Esc</kbd> 也能把它恢复默认尺寸
+    </p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  const tilesBox = document.getElementById('tiles');
+  const tiles = [...tilesBox.querySelectorAll('.tile')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STORE = 'hub.tiles.v1';
+
+  /* ── 1. 跟随指针的光效（背景两颗光斑 + 磁贴内光斑） ────────── */
+  const b1 = document.getElementById('b1'), b2 = document.getElementById('b2'), spot = document.getElementById('spot');
+  let mx = innerWidth / 2, my = innerHeight * .32;         // 目标点
+  let p1 = { x: mx, y: my }, p2 = { x: mx, y: my };         // 两颗光斑的当前位置（滞后跟随）
+
+  const place = (el, x, y) => { el.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-50%)`; };
+  place(b1, mx, my); place(b2, mx, my); place(spot, mx, my);
+
+  addEventListener('pointermove', (e) => {
+    mx = e.clientX; my = e.clientY;
+    root.style.setProperty('--mx', mx + 'px');
+    root.style.setProperty('--my', my + 'px');
+    place(spot, mx, my);
+  }, { passive: true });
+
+  if (!reduce) {
+    (function loop() {
+      p1.x += (mx - p1.x) * .045; p1.y += (my - p1.y) * .045;   // 慢的一颗
+      p2.x += (mx - p2.x) * .085; p2.y += (my - p2.y) * .085;   // 快一点的
+      place(b1, p1.x, p1.y); place(b2, p2.x, p2.y);
+      requestAnimationFrame(loop);
+    })();
+  }
+
+  for (const t of tiles) {                                    // 磁贴内的光斑跟着指针走
+    t.addEventListener('pointermove', (e) => {
+      const r = t.getBoundingClientRect();
+      t.style.setProperty('--tx', ((e.clientX - r.left) / r.width * 100) + '%');
+      t.style.setProperty('--ty', ((e.clientY - r.top) / r.height * 100) + '%');
+    }, { passive: true });
+  }
+
+  /* ── 2. 磁贴尺寸：拖右下角手柄改，存 localStorage ─────────── */
+  const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+  const maxSpan = () => (innerWidth < 560 ? 2 : innerWidth < 900 ? 3 : 4);
+
+  // 列数按可用宽度算，并强制偶数——2 格宽的磁贴才填得满一整行
+  const fitCols = () => {
+    const cs = getComputedStyle(root);
+    const u = parseFloat(cs.getPropertyValue('--u')) || 96;
+    const gap = parseFloat(cs.getPropertyValue('--gap')) || 12;
+    const avail = tilesBox.parentElement.clientWidth;
+    let cols = Math.floor((avail + gap) / (u + gap));
+    cols = clamp(cols, 2, 8);
+    if (cols % 2) cols -= 1;
+    root.style.setProperty('--cols', cols);
+  };
+  fitCols();
+
+  const defaults = {};
+  for (const t of tiles) defaults[t.dataset.id] = [+t.dataset.w, +t.dataset.h];
+
+  const apply = (t, w, h) => {
+    w = clamp(w, 1, maxSpan()); h = clamp(h, 1, 4);
+    t.dataset.w = w; t.dataset.h = h;
+    t.style.setProperty('--w', w); t.style.setProperty('--h', h);
+    return [w, h];
+  };
+
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch { saved = {}; }
+  for (const t of tiles) {
+    const d = saved[t.dataset.id];
+    if (Array.isArray(d)) apply(t, d[0], d[1]); else apply(t, ...defaults[t.dataset.id]);
+  }
+  const persist = () => {
+    const out = {};
+    for (const t of tiles) out[t.dataset.id] = [+t.dataset.w, +t.dataset.h];
+    try { localStorage.setItem(STORE, JSON.stringify(out)); } catch {}
+  };
+
+  let drag = null;
+  for (const t of tiles) {
+    const handle = t.querySelector('.handle');
+    if (!handle) continue;
+
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      drag = { t, x0: e.clientX, y0: e.clientY, w0: +t.dataset.w, h0: +t.dataset.h, moved: false };
+      handle.setPointerCapture(e.pointerId);
+      tilesBox.classList.add('resizing');
+    });
+
+    handle.addEventListener('pointermove', (e) => {
+      if (!drag || drag.t !== t) return;
+      const cs = getComputedStyle(root);
+      const step = (parseFloat(cs.getPropertyValue('--u')) || 96) + (parseFloat(cs.getPropertyValue('--gap')) || 12);
+      const dw = Math.round((e.clientX - drag.x0) / step);
+      const dh = Math.round((e.clientY - drag.y0) / step);
+      if (Math.abs(e.clientX - drag.x0) > 4 || Math.abs(e.clientY - drag.y0) > 4) drag.moved = true;
+      const [w, h] = apply(t, drag.w0 + dw, drag.h0 + dh);
+      t.dataset.tip = w + '×' + h;
+    });
+
+    const endDrag = () => {
+      if (!drag) return;
+      const { t: tt, moved } = drag;
+      drag = null;
+      tilesBox.classList.remove('resizing');
+      tt.removeAttribute('data-tip');
+      if (moved) {                                    // 拖动过就别触发跳转
+        persist();
+        const swallow = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
+        tt.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => tt.removeEventListener('click', swallow, { capture: true }), 350);
+      }
+    };
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+
+    handle.addEventListener('dblclick', (e) => {      // 双击手柄：这张恢复默认
+      e.preventDefault(); e.stopPropagation();
+      apply(t, ...defaults[t.dataset.id]); persist();
+    });
+    t.addEventListener('keydown', (e) => {            // 选中后 Esc：这张恢复默认
+      if (e.key === 'Escape') { apply(t, ...defaults[t.dataset.id]); persist(); }
+    });
+  }
+
+  addEventListener('resize', () => {
+    fitCols();
+    for (const t of tiles) apply(t, +t.dataset.w, +t.dataset.h);
+    persist();
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    try { localStorage.removeItem(STORE); } catch {}
+    for (const t of tiles) apply(t, ...defaults[t.dataset.id]);
+  });
+
+  /* ── 3. 顶部时钟 ─────────────────────────────────────────── */
+  const clock = document.getElementById('clock');
+  const tick = () => {
+    const d = new Date();
+    clock.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  };
+  tick(); setInterval(tick, 20000);
+})();
+</script>
 </body>
 </html>

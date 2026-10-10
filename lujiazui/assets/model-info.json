@@ -1,0 +1,70 @@
+{
+  "contextBuildings": 502,
+  "taggedHeights": 73,
+  "estimatedHeights": 429,
+  "trees": 384,
+  "landmarks": [
+    {
+      "id": "shanghai",
+      "name": "上海中心大厦",
+      "height": 632,
+      "position": [
+        -22.005423994446325,
+        0,
+        454.20481979985794
+      ],
+      "lat": 31.2355923,
+      "lon": 121.5012688
+    },
+    {
+      "id": "swfc",
+      "name": "上海环球金融中心",
+      "height": 492,
+      "position": [
+        142.14057177811154,
+        0,
+        343.75245119996566
+      ],
+      "lat": 31.2365912,
+      "lon": 121.5029934
+    },
+    {
+      "id": "jinmao",
+      "name": "金茂大厦",
+      "height": 420.5,
+      "position": [
+        -10.174653222092326,
+        0,
+        269.3803787998035
+      ],
+      "lat": 31.2372638,
+      "lon": 121.5013931
+    },
+    {
+      "id": "pearl",
+      "name": "东方明珠广播电视塔",
+      "height": 468,
+      "position": [
+        -593.4421220265133,
+        0,
+        -242.95319280013618
+      ],
+      "lat": 31.2418972,
+      "lon": 121.495265
+    }
+  ],
+  "origin": {
+    "lon": 121.5015,
+    "lat": 31.2397
+  },
+  "bounds": [
+    -1300,
+    1100,
+    -1100,
+    900
+  ],
+  "unit": "metre",
+  "source": "OpenStreetMap contributors, ODbL; workspace parameter dossiers; procedural architectural interpretation",
+  "meshObjects": 22,
+  "vertices": 1146768
+}

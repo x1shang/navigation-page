@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="在三维中探索陆家嘴核心区：四座地标、黄浦江岸线与城市肌理。Blender 参数化模型，支持昼夜切换与建筑聚焦。">
+<meta name="theme-color" content="#0b141d"><title>陆家嘴 · 城市剖面 | Lujiazui Atlas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead"><a class="brand" href="./index.html" aria-label="陆家嘴城市剖面首页"><span class="brand-icon">川</span><span>城市剖面 <small>URBAN ATLAS / SHANGHAI</small></span></a><div class="mast-right"><span class="coordinates">31.2397° N &nbsp;121.5015° E</span><button id="about-open" class="text-button">关于模型 <span>↗</span></button></div></header>
+<main>
+<section class="intro" aria-label="陆家嘴模型介绍"><div class="eyebrow"><span class="line"></span> SHANGHAI · PUDONG</div><h1>陆家嘴<span>城市的<br>另一种尺度。</span></h1><p class="intro-text">从黄浦江的转弯处，<br>看见一座城市向上的轮廓。</p><div class="summary"><div><strong>04</strong><span>地标建筑</span></div><div><strong id="count">502</strong><span>周边楼栋</span></div><div><strong>632<small>m</small></strong><span>天际线最高点</span></div></div><div class="intro-rule"></div><p class="edition">LUJIAZUI CORE / 01<br><span>地理对齐 · 建筑形体研究</span></p><button id="home" class="primary-button">探索全景 <span>↗</span></button></section>
+<section id="stage" class="stage" aria-label="陆家嘴交互三维模型">
+<div id="canvas-wrap"></div><div id="labels" class="labels"></div>
+<div class="scene-toolbar"><div class="segmented" aria-label="场景光照"><button id="day" aria-pressed="true" class="active">日光</button><button id="night" aria-pressed="false">蓝调</button></div><button id="rotate" class="tool-button" aria-pressed="false" title="自动环绕">⟳ <span>环绕</span></button><button id="labels-toggle" class="tool-button" aria-pressed="true" title="显示建筑标注">⊙ <span>标注</span></button></div>
+<div class="scene-caption"><span id="view-name">01 / 城市全景</span><span class="live-mark">交互三维</span></div>
+<div class="compass" aria-label="北向指示"><span>N</span><svg id="compass-needle" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3L26 31L20 25L14 31Z" fill="#73d4d3"/></svg></div>
+<div class="view-controls"><button id="aerial" title="鸟瞰全景">◈<span>鸟瞰</span></button><button id="bund" title="江岸视角">▱<span>江岸</span></button><button id="plan" title="俯视总平面">⊞<span>总平</span></button><span class="separator"></span><button id="capture" title="保存当前视角图片">↓<span>截图</span></button></div>
+<div class="interaction-hint">拖动旋转 <i>·</i> 滚轮缩放 <i>·</i> 右键平移</div>
+<div id="loading" class="loading" role="status"><span class="loading-orbit"></span><strong id="loading-text">正在展开城市…</strong><span>加载本地 Blender 模型</span></div>
+<div id="failure" class="failure" hidden><img src="assets/aerial.png" alt="陆家嘴模型鸟瞰渲染"><div><strong>当前环境无法启动三维视图</strong><p id="error-detail">请使用支持 WebGL 2 的新版浏览器。</p><button onclick="location.reload()">重新加载</button></div></div>
+</section>
+<aside id="detail" class="detail" hidden aria-live="polite"><button id="detail-close" aria-label="关闭建筑详情">×</button><span id="detail-en" class="eyebrow"></span><h2 id="detail-name"></h2><div class="detail-height"><span id="detail-height"></span><small>米 / 建筑高度</small></div><p id="detail-copy"></p><span id="detail-coord" class="detail-coordinate"></span></aside>
+<nav class="landmarks" aria-label="选择地标建筑">
+<button data-landmark="shanghai"><span class="landmark-number">01</span><svg viewBox="0 0 34 60" aria-hidden="true"><path d="M8 57Q4 37 13 3L24 4Q17 29 27 57ZM12 48L23 37M10 33L22 22M12 17L24 9"/></svg><span class="landmark-title">上海中心<small>SHANGHAI TOWER</small></span><span class="landmark-height">632<small>m</small></span></button>
+<button data-landmark="swfc"><span class="landmark-number">02</span><svg viewBox="0 0 34 60" aria-hidden="true"><path d="M5 57L10 6H27L29 57ZM12 10L14 18H23L25 10Z"/></svg><span class="landmark-title">环球金融中心<small>WORLD FINANCIAL CENTER</small></span><span class="landmark-height">492<small>m</small></span></button>
+<button data-landmark="jinmao"><span class="landmark-number">03</span><svg viewBox="0 0 34 60" aria-hidden="true"><path d="M17 2V10L21 15V22H24V30H27V39H30V57H4V39H7V30H10V22H13V15L17 10M7 44H27M10 34H24M13 26H21"/></svg><span class="landmark-title">金茂大厦<small>JIN MAO TOWER</small></span><span class="landmark-height">420.5<small>m</small></span></button>
+<button data-landmark="pearl"><span class="landmark-number">04</span><svg viewBox="0 0 34 60" aria-hidden="true"><path d="M17 1V14M14 25V39M20 25V39M14 51L8 58M20 51L26 58"/><circle cx="17" cy="20" r="6"/><circle cx="17" cy="45" r="8"/></svg><span class="landmark-title">东方明珠<small>ORIENTAL PEARL</small></span><span class="landmark-height">468<small>m</small></span></button>
+</nav>
+</main>
+<footer><span>BLENDER → WEBGL <span class="footer-divider">/</span> 建筑可视化模型，非测绘或施工成果</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">地图数据 © OpenStreetMap contributors · ODbL ↗</a></footer>
+<dialog id="about"><div class="dialog-head"><span class="eyebrow">ABOUT THE MODEL</span><button id="about-close" aria-label="关闭关于模型">×</button></div><h2>真实位置，参数化重构。</h2><p>本模型在本机 Blender 中生成。使用工作区的 OSM 建筑轮廓、道路、水面和用地数据，结合建筑参数档案与实景照片，对陆家嘴核心区进行分层建模。</p><div class="about-grid"><div><strong>4 座重点地标</strong><p>上海中心扭转外形、环球金融中心梯形洞口、金茂退台、东方明珠球体与支撑结构。</p></div><div><strong>502 栋周边建筑</strong><p>73 栋使用数据中标注的高度，429 栋使用已有估算高度。树木与游船为表现性配置。</p></div></div><p>单位为米，范围约 2.4 × 2.0 公里。主楼位置沿用工作区 OSM 经纬度；幕墙分格、球体细节、地面铺装和灯光为简化表达。局部几何不是施工级复原，OSM 数据可能不完整。</p><div class="source-links"><a href="https://www.gensler.com/projects/shanghai-tower" target="_blank" rel="noreferrer">Gensler · 上海中心 ↗</a><a href="https://swfc-shanghai.com/about_intro.php?l=en" target="_blank" rel="noreferrer">环球金融中心 · 官方参数 ↗</a><a href="https://www.som.com/projects/jin-mao-tower/" target="_blank" rel="noreferrer">SOM · 金茂大厦 ↗</a><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OSM · 数据许可 ↗</a></div><button id="download" class="primary-button">下载三维模型 GLB <span>↓</span></button><p class="credits">网页渲染使用 Three.js（MIT）。模型数据说明见同目录 assets/model-info.json。外部链接仅用于资料溯源，浏览模型无需联网。</p></dialog>
+<script src="assets/model-data.js"></script><script src="app.js"></script>
+</body></html>
