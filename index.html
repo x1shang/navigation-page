@@ -135,11 +135,13 @@
   .gh:hover{opacity:1;transform:translateY(-1px)}
   .gh svg{width:19px;height:19px;display:block}
   .repos{display:grid;gap:10px}
-  .repo{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:15px 18px;
+  .repo{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 18px;
         border:1px solid var(--line);border-radius:14px;background:var(--tile);text-decoration:none;color:inherit;
         transition:border-color .15s,transform .15s}
   .repo:hover{border-color:rgba(201,182,255,.5);transform:translateY(-1px)}
+  .rtext{display:flex;flex-direction:column;gap:3px;min-width:0}
   .rname{font-weight:600;word-break:break-all}
+  .rdesc{color:var(--dim);font-size:12.5px;line-height:1.55}
   .rmeta{color:var(--dim);font-size:12.5px;white-space:nowrap;font-family:ui-monospace,Menlo,Consolas,monospace}
 
   footer{margin-top:36px;text-align:center;color:#6f6f85;font-size:12.5px}
@@ -249,17 +251,19 @@
       <span class="handle" title="拖动调整大小，双击复位"></span>
     </a>
 
-    <div class="tile todo" data-id="notgay" style="--accent:#fbbf24"
-         title="x1shang真的不.是.gay（xn--x1shang-bx3kn121ajjb.xn--0iv.gay）还在搭，敬请期待">
-      <span class="badge">敬请期待</span>
+    <a class="tile" href="https://x1shang.top" target="_blank" rel="noopener"
+       data-id="home" style="--accent:#38bdf8" draggable="false">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
-        <path d="M24 8l3 9.4 9.4 3-9.4 3-3 9.4-3-9.4-9.4-3 9.4-3z"/>
-        <circle cx="37" cy="37" r="3"/>
+        stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M4 39h40"/>
+        <path d="M8 39L19 14l11 25z"/>
+        <path d="M14.4 24.5L19 29.5l4.7-5"/>
+        <path d="M28 39l6.5-12L41 39z"/>
+        <path d="M32.1 31.5L34.5 33.5l2.4-2"/>
       </svg></span>
-      <span class="txt"><span class="label">x1shang真的不.是.gay</span><span class="sub">敬请期待</span></span>
+      <span class="txt"><span class="label">个人主页</span><span class="sub">x1shang.top</span></span>
       <span class="handle" title="拖动调整大小，双击复位"></span>
-    </div>
+    </a>
 
   </div>
 
@@ -274,14 +278,14 @@
       </a>
     </h2>
     <div class="repos">
-      <a class="repo" href="https://github.com/x1shang/Wetbulb-Calculator" target="_blank" rel="noopener"><span class="rname">Wetbulb-Calculator</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/Aippt" target="_blank" rel="noopener"><span class="rname">Aippt</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/frocloud-DIYPCmarket" target="_blank" rel="noopener"><span class="rname">frocloud-DIYPCmarket</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/Chariot_strom_of_gear" target="_blank" rel="noopener"><span class="rname">Chariot_strom_of_gear</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/dsh-koin-lily-news" target="_blank" rel="noopener"><span class="rname">dsh-koin-lily-news</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/complex-sweeper-helper" target="_blank" rel="noopener"><span class="rname">complex-sweeper-helper</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/navigation-page" target="_blank" rel="noopener"><span class="rname">navigation-page</span><span class="rmeta">GitHub ↗</span></a>
-      <a class="repo" href="https://github.com/x1shang/python-2024-2025" target="_blank" rel="noopener"><span class="rname">python-2024-2025</span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/Wetbulb-Calculator" target="_blank" rel="noopener"><span class="rtext"><span class="rname">Wetbulb-Calculator</span><span class="rdesc">RDFZ 降水相态研究组的科研级气象工具：湿球与露点温度双向计算，集成 14 种国际公式</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/Aippt" target="_blank" rel="noopener"><span class="rtext"><span class="rname">Aippt</span><span class="rdesc">a handy &amp; lite-sized tool using api to generate .pptx from .md files</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/frocloud-DIYPCmarket" target="_blank" rel="noopener"><span class="rtext"><span class="rname">frocloud-DIYPCmarket</span><span class="rdesc">自 25 年 8 月以来的 DIY 市场行情档案，内含 GPU / CPU 天梯图</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/Chariot_strom_of_gear" target="_blank" rel="noopener"><span class="rtext"><span class="rname">Chariot_strom_of_gear</span><span class="rdesc">Arduino source code and related files for the student mechanical competition project</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/dsh-koin-lily-news" target="_blank" rel="noopener"><span class="rtext"><span class="rname">dsh-koin-lily-news</span><span class="rdesc">菲奖级白河乡资讯DSH插件</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/complex-sweeper-helper" target="_blank" rel="noopener"><span class="rtext"><span class="rname">complex-sweeper-helper</span><span class="rdesc">复扫雷 Complexweeper 的 AI 助手：读窗口 → 识别棋盘 → 5 态约束求解 → 概率热力图</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/navigation-page" target="_blank" rel="noopener"><span class="rtext"><span class="rname">navigation-page</span><span class="rdesc">x1shang 的个人导航页</span></span><span class="rmeta">GitHub ↗</span></a>
+      <a class="repo" href="https://github.com/x1shang/python-2024-2025" target="_blank" rel="noopener"><span class="rtext"><span class="rname">python-2024-2025</span><span class="rdesc">My inchoate programming trove. Want some crispy potatoes?</span></span><span class="rmeta">GitHub ↗</span></a>
     </div>
   </section>
 
