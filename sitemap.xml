@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 导航页的入口页与三个子站。注意 /threebody/ 首次加载约 32 MB、/lujiazui/ 约 16 MB，
+<!-- 导航页的入口页与四个子站。注意 /threebody/ 首次加载约 32 MB、/lujiazui/ 约 16 MB，
      被爬虫反复抓取时会吃 GitHub Pages 的 100 GB/月 带宽软额度。 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://xn--vnqp08bwj8a.xn--0iv.gay/</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-10-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -21,6 +21,11 @@
   <url>
     <loc>https://xn--vnqp08bwj8a.xn--0iv.gay/threebody/</loc>
     <lastmod>2026-10-11</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xn--vnqp08bwj8a.xn--0iv.gay/wetbulb/</loc>
+    <lastmod>2026-10-12</lastmod>
     <priority>0.8</priority>
   </url>
 </urlset>
