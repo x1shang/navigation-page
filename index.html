@@ -11,7 +11,7 @@
 <meta property="og:site_name" content="x1shang 的导航页">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="x1shang 的导航页">
-<meta property="og:description" content="我做的各种网页、作品和仓库：排序可视化、陆家嘴城市剖面、三体地表观测站。">
+<meta property="og:description" content="我做的各种网页、作品和仓库：排序可视化、陆家嘴城市剖面、三体地表观测站、湿球温度计算器。">
 <meta property="og:url" content="https://xn--vnqp08bwj8a.xn--0iv.gay/">
 <meta property="og:image" content="https://xn--vnqp08bwj8a.xn--0iv.gay/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -30,7 +30,7 @@
     --line:rgba(255,255,255,.10);
     --tile:rgba(255,255,255,.045);
     --gap:12px;
-    --u:96px;                 /* 磁贴单位边长；8 列 × 4 行 = 默认铺满的棋盘 */
+    --u:96px;                 /* 磁贴单位边长；8 列 × 5 行 = 默认铺满的棋盘 */
     --mx:50vw; --my:30vh;     /* 指针位置，驱动背景光斑与遮罩 */
   }
   *{box-sizing:border-box}
@@ -207,7 +207,7 @@
     <p class="status" id="status">…<span class="tz"> · 北京时间</span></p>
   </header>
 
-  <!-- 磁贴：默认在每个 8×4 棋盘上随机切成 6 块矩形，正好铺满 -->
+  <!-- 磁贴：默认在每个 8×5 棋盘上随机切成 7 块矩形，正好铺满 -->
   <div class="stage" id="stage" aria-label="入口磁贴">
 
     <a class="tile" href="./sorting/" data-id="sorting" style="--accent:#ff6ec7" draggable="false">
@@ -239,6 +239,17 @@
         <circle cx="12" cy="7" r="2.2" fill="currentColor" stroke="none"/>
       </svg></span>
       <span class="txt"><span class="label">三体 · 地表观测站</span><span class="sub">Three-Body Simulator</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </a>
+
+    <a class="tile" href="./wetbulb/" data-id="wetbulb" style="--accent:#2dd4bf" draggable="false">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
+        stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 9a4 4 0 0 1 8 0v20a8 8 0 1 1-8 0Z"/>
+        <path d="M18 16v18"/><circle cx="18" cy="36" r="3" fill="currentColor" stroke="none"/>
+        <path d="M35 11s-7 9-7 14a7 7 0 0 0 14 0c0-5-7-14-7-14Z"/>
+      </svg></span>
+      <span class="txt"><span class="label">湿球温度计算器</span><span class="sub">WetBulb Calculator · 网页版</span></span>
       <span class="handle" title="拖动调整大小，双击复位"></span>
     </a>
 
@@ -366,7 +377,7 @@
   }
 
   /* ══ 2. 排版引擎：随机切分 / 稠密重排 / 连续拖拽 ═══════════ */
-  let u = 96, gap = 12, cols = 8, rows = 4;
+  let u = 96, gap = 12, cols = 8, rows = 5;
   let layout = {};                                       // id -> {x,y,w,h}（格为单位）
   let touched = false;                                   // 用户是否手动改过尺寸（改过就不再随机重切）
   const sizes = {};                                      // id -> [w,h] 当前尺寸
@@ -382,7 +393,7 @@
     let c = clamp(Math.floor((avail + gap) / (u + gap)), 4, 8);
     if (c % 2) c -= 1;
     cols = c;
-    rows = Math.max(4, Math.ceil((tiles.length * 32 / 6) / cols));   // 6 块正好铺满 8×4 = 32 格
+    rows = Math.max(5, Math.ceil((tiles.length * 40 / 7) / cols));   // 7 块正好铺满 8×5 = 40 格
   }
 
   // 把 cols×rows 的棋盘用随机「断头台切割」切成 n 个矩形，保证每块 ≥2×2 且正好铺满
@@ -474,7 +485,7 @@
   }
 
   /* —— 排版状态：默认每次随机；勾了「记住我的排布」才用 localStorage —— */
-  const LS = 'hub.tiles.v3', SS = 'hub.session.v3', RM = 'hub.remember.v3';
+  const LS = 'hub.tiles.v4', SS = 'hub.session.v4', RM = 'hub.remember.v3';
   const remember = document.getElementById('remember');
   const parse = (s) => { try { return JSON.parse(s || 'null'); } catch { return null; } };
   try { remember.checked = localStorage.getItem(RM) === '1'; } catch {}
@@ -615,9 +626,5 @@
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) { setLang(false); modal.hidden = true; } });
 })();
 </script>
-<!-- Cloudflare Web Analytics（只看流量，无 cookie）：把下面的 REPLACE_WITH_CF_BEACON_TOKEN
-     换成 Cloudflare 后台 → Web Analytics → Add a site 给的 token（hostname 填这个域名）。
-     没换之前不影响页面，只是不会记录数据。 -->
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"REPLACE_WITH_CF_BEACON_TOKEN"}'></script>
 </body>
 </html>
