@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 导航页的入口页与四个子站。注意 /threebody/ 首次加载约 32 MB、/lujiazui/ 约 16 MB，
+<!-- 导航页的入口页与各个子页面。注意 /threebody/ 首次加载约 32 MB、/lujiazui/ 约 16 MB，
      被爬虫反复抓取时会吃 GitHub Pages 的 100 GB/月 带宽软额度。 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -28,4 +28,7 @@
     <lastmod>2026-10-12</lastmod>
     <priority>0.8</priority>
   </url>
+  <url><loc>https://navi.x1shang.top/learning/</loc><lastmod>2026-10-14</lastmod><priority>0.8</priority></url>
+  <url><loc>https://navi.x1shang.top/graph.html</loc><lastmod>2026-10-14</lastmod><priority>0.8</priority></url>
+  <url><loc>https://navi.x1shang.top/octopus.html</loc><lastmod>2026-10-14</lastmod><priority>0.8</priority></url>
 </urlset>

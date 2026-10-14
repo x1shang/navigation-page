@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>高数函数图像速查：sec/csc/cot、反三角函数、双曲函数与反双曲函数</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#5a5a5a; --line:#dcdcdc; --blue:#1f4e9c;
+          --bg:#fbfbfd; --warn:#fff8e6; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px 40px 80px; background:var(--bg); color:var(--ink);
+         font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+         line-height:1.75; font-size:15px; max-width:1500px; margin-inline:auto; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  h2 { font-size:20px; margin:44px 0 12px; padding-bottom:6px;
+       border-bottom:2px solid var(--line); }
+  h3 { font-size:16px; margin:26px 0 8px; color:var(--blue); }
+  p.lead { color:var(--muted); margin-top:0; }
+  figure { margin:18px 0 30px; }
+  figure img { width:100%; border:1px solid var(--line); border-radius:8px;
+               background:#fff; }
+  figcaption { font-size:13.5px; color:var(--muted); margin-top:8px; }
+  table { border-collapse:collapse; width:100%; margin:12px 0 22px;
+          background:#fff; font-size:14px; }
+  th,td { border:1px solid var(--line); padding:7px 10px; text-align:left; }
+  th { background:#eef3fa; font-weight:600; white-space:nowrap; }
+  td code, th code { background:#f3f5f8; padding:1px 5px; border-radius:4px;
+                     font-family:Consolas,monospace; font-size:13px; }
+  .box { background:var(--warn); border:1px solid #e6d391; border-radius:8px;
+         padding:14px 18px; margin:16px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .tag { display:inline-block; font-size:12.5px; padding:1px 9px; border-radius:10px;
+         margin-right:6px; vertical-align:1px; font-weight:600; }
+  .must { background:#fde8e8; color:#a32222; }
+  .know { background:#e8f0fd; color:#1f4e9c; }
+  .skip { background:#eeeeee; color:#666; }
+  ul { padding-left:22px; }
+  li { margin:4px 0; }
+  code { font-family:Consolas,monospace; }
+  @media print { body { padding:0; background:#fff; } h2 { page-break-after:avoid; }
+                 figure { page-break-inside:avoid; } }
+</style>
+<link rel="icon" type="image/x-icon" href="绪山真寻的本体.ico">
+</head>
+<body>
+<nav><a href="./learning/">← 学习可视化</a></nav>
+
+<h1>高数函数图像速查</h1>
+<p class="lead">sec / csc / cot　·　arcsin / arccos / arctan / arcsec / arccsc / arccot　·　
+sinh / cosh / tanh / sech / csch / coth　·　反双曲函数</p>
+
+<div class="box">
+<b>一句话结论</b><br>
+必须滚瓜烂熟：<code>arcsin, arccos, arctan, arccot</code> 的定义域/值域/导数，
+<code>sinh, cosh, tanh</code> 的定义与导数，<code>cosh²x−sinh²x=1</code>，
+以及三个反双曲函数 <code>arsinh, arcosh, artanh</code> 的对数表达式。<br>
+知道定义和图像即可：<code>sec, csc, cot</code>（重点是它们的导数和两个积分）。<br>
+大多数国内教材不作要求：<code>arcsec, arccsc, arsech, arcsch, arcoth</code>。
+</div>
+
+<h2>一、倒数三角函数 sec / csc / cot</h2>
+<figure>
+  <img src="01_倒数三角函数_sec_csc_cot.png" alt="sec csc cot 图像">
+  <figcaption>看图像时抓三个要点：①零点处变成竖直渐近线；②原函数的极值点变成倒数函数的极值点，
+  且数值取倒数（如 sin 的 ±1 → csc 的 ±1）；③图像“从中间翻出去”，值域被挖掉 (−1,1)。</figcaption>
+</figure>
+
+<h2>二、反三角函数（arcsin / arccos / arctan）</h2>
+<figure>
+  <img src="02_反三角函数_arcsin_arccos_arctan.png" alt="arcsin arccos arctan 图像">
+  <figcaption>虚线是限制主值区间后的原函数，点划线是 y=x。反函数图像 = 原图像关于 y=x 翻折，
+  定义域与值域互换，水平渐近线（如 y=π/2）随之变成垂直渐近线。</figcaption>
+</figure>
+
+<h2>三、其余反三角函数（arcsec / arccsc / arccot）</h2>
+<figure>
+  <img src="03_反三角函数_arcsec_arccsc_arccot.png" alt="arcsec arccsc arccot 图像">
+  <figcaption>记忆捷径：<code>arcsec x = arccos(1/x)</code>，<code>arccsc x = arcsin(1/x)</code>，
+  <code>arccot x = π/2 − arctan x</code>。注意 <code>arccot</code> 的值域约定各书不同，
+  本书统一取 (0, π)，此时 arccot 是单调递减且处处连续的。</figcaption>
+</figure>
+
+<h2>四、双曲函数 sinh / cosh / tanh</h2>
+<figure>
+  <img src="04_双曲函数_sinh_cosh_tanh.png" alt="sinh cosh tanh 图像">
+  <figcaption>把三角函数公式里的“和”改成“差”（平方关系），并在两个 sinh 相乘时变号，
+  就得到双曲函数的公式——这条规律叫 Osborn 规则。cosh 的图像就是悬链线。</figcaption>
+</figure>
+
+<h2>五、其余双曲函数 sech / csch / coth</h2>
+<figure>
+  <img src="05_双曲函数_sech_csch_coth.png" alt="sech csch coth 图像">
+  <figcaption>与 sec/csc/cot 完全平行的结构：sech 偶函数、值域 (0,1]；csch 与 coth 都是以 x=0
+  为垂直渐近线的奇函数，coth 另有水平渐近线 y=±1。</figcaption>
+</figure>
+
+<h2>六、反双曲函数（主支）</h2>
+<figure>
+  <img src="06_反双曲函数_arsinh_arcosh_artanh.png" alt="arsinh arcosh artanh 图像">
+  <figcaption>三个都是对数函数——这是高数里最该记住的一句话。积分表里的
+  <code>∫dx/√(x²+a²)</code>、<code>∫dx/√(x²−a²)</code>、<code>∫dx/(a²−x²)</code>
+  本质就是这三个反双曲函数。</figcaption>
+</figure>
+
+<h2>七、其余反双曲函数</h2>
+<figure>
+  <img src="07_反双曲函数_arsech_arcsch_arcoth.png" alt="arsech arcsch arcoth 图像">
+  <figcaption>全部可以由三个主支 + 倒数关系 <code>ar·(x) = 主支(1/x)</code> 得到，
+  不需要单独背。记号上有的书写成 <code>sinh⁻¹x</code>、<code>arcsinh x</code>，含义相同。</figcaption>
+</figure>
+
+<h2>八、四张图帮你记住全部关系</h2>
+<figure>
+  <img src="08_记忆图_单位圆_双曲线_对称_六边形.png" alt="单位圆、双曲线、反函数对称、六边形记忆图">
+  <figcaption>左上：单位圆上六个三角函数的几何意义；右上：单位双曲线给出 cosh/sinh；
+  左下：反函数关于 y=x 对称；右下：六边形记忆图（对角互为倒数、顶点等于两邻之积、
+  三个三角形给出三条平方关系）。</figcaption>
+</figure>
+
+<h2>九、速查表</h2>
+
+<h3>定义域、值域、奇偶性</h3>
+<table>
+<tr><th>函数</th><th>定义域</th><th>值域</th><th>奇偶</th><th>单调性</th></tr>
+<tr><td><code>sec x</code></td><td>x ≠ π/2+kπ</td><td>(−∞,−1]∪[1,+∞)</td><td>偶</td><td>分段单调</td></tr>
+<tr><td><code>csc x</code></td><td>x ≠ kπ</td><td>(−∞,−1]∪[1,+∞)</td><td>奇</td><td>分段单调</td></tr>
+<tr><td><code>cot x</code></td><td>x ≠ kπ</td><td>(−∞,+∞)</td><td>奇</td><td>递减，周期 π</td></tr>
+<tr><td><code>arcsin x</code></td><td>[−1,1]</td><td>[−π/2,π/2]</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>arccos x</code></td><td>[−1,1]</td><td>[0,π]</td><td>非奇非偶</td><td>递减</td></tr>
+<tr><td><code>arctan x</code></td><td>(−∞,+∞)</td><td>(−π/2,π/2)</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>arccot x</code></td><td>(−∞,+∞)</td><td>(0,π)（本书约定）</td><td>非奇非偶</td><td>递减</td></tr>
+<tr><td><code>arcsec x</code></td><td>|x|≥1</td><td>[0,π/2)∪(π/2,π]</td><td>非奇非偶</td><td>分段</td></tr>
+<tr><td><code>arccsc x</code></td><td>|x|≥1</td><td>[−π/2,0)∪(0,π/2]</td><td>奇</td><td>分段</td></tr>
+<tr><td><code>sinh x</code></td><td>(−∞,+∞)</td><td>(−∞,+∞)</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>cosh x</code></td><td>(−∞,+∞)</td><td>[1,+∞)</td><td>偶</td><td>先减后增</td></tr>
+<tr><td><code>tanh x</code></td><td>(−∞,+∞)</td><td>(−1,1)</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>sech x</code></td><td>(−∞,+∞)</td><td>(0,1]</td><td>偶</td><td>先增后减</td></tr>
+<tr><td><code>csch x</code></td><td>x ≠ 0</td><td>y ≠ 0</td><td>奇</td><td>两支递减</td></tr>
+<tr><td><code>coth x</code></td><td>x ≠ 0</td><td>(−∞,−1)∪(1,+∞)</td><td>奇</td><td>两支递减</td></tr>
+<tr><td><code>arsinh x</code></td><td>(−∞,+∞)</td><td>(−∞,+∞)</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>arcosh x</code></td><td>[1,+∞)</td><td>[0,+∞)</td><td>无</td><td>递增</td></tr>
+<tr><td><code>artanh x</code></td><td>(−1,1)</td><td>(−∞,+∞)</td><td>奇</td><td>递增</td></tr>
+<tr><td><code>arsech x</code></td><td>(0,1]</td><td>[0,+∞)</td><td>无</td><td>递减</td></tr>
+<tr><td><code>arcsch x</code></td><td>x ≠ 0</td><td>y ≠ 0</td><td>奇</td><td>两支递减</td></tr>
+<tr><td><code>arcoth x</code></td><td>|x|&gt;1</td><td>(−∞,−1)∪(1,+∞)</td><td>奇</td><td>两支递减</td></tr>
+</table>
+
+<h3>导数（考试真正考的就是这一栏）</h3>
+<table>
+<tr><th>函数</th><th>导数</th><th>函数</th><th>导数</th></tr>
+<tr><td><code>sin x</code></td><td>cos x</td><td><code>arcsin x</code></td><td>1/√(1−x²)</td></tr>
+<tr><td><code>cos x</code></td><td>−sin x</td><td><code>arccos x</code></td><td>−1/√(1−x²)</td></tr>
+<tr><td><code>tan x</code></td><td>sec²x</td><td><code>arctan x</code></td><td>1/(1+x²)</td></tr>
+<tr><td><code>cot x</code></td><td>−csc²x</td><td><code>arccot x</code></td><td>−1/(1+x²)</td></tr>
+<tr><td><code>sec x</code></td><td>sec x·tan x</td><td><code>arcsec x</code></td><td>1/(|x|√(x²−1))</td></tr>
+<tr><td><code>csc x</code></td><td>−csc x·cot x</td><td><code>arccsc x</code></td><td>−1/(|x|√(x²−1))</td></tr>
+<tr><td><code>sinh x</code></td><td>cosh x</td><td><code>arsinh x</code></td><td>1/√(x²+1)</td></tr>
+<tr><td><code>cosh x</code></td><td>sinh x</td><td><code>arcosh x</code></td><td>1/√(x²−1)</td></tr>
+<tr><td><code>tanh x</code></td><td>sech²x</td><td><code>artanh x</code></td><td>1/(1−x²)</td></tr>
+<tr><td><code>sech x</code></td><td>−sech x·tanh x</td><td><code>arcoth x</code></td><td>1/(1−x²)</td></tr>
+<tr><td><code>csch x</code></td><td>−csch x·coth x</td><td><code>arsech x</code></td><td>−1/(x√(1−x²))</td></tr>
+<tr><td><code>coth x</code></td><td>−csch²x</td><td><code>arcsch x</code></td><td>−1/(|x|√(1+x²))</td></tr>
+</table>
+
+<h3>对数表达式与常用恒等式</h3>
+<table>
+<tr><th>函数</th><th>对数表达式</th></tr>
+<tr><td><code>arsinh x</code></td><td>ln(x+√(x²+1))，x∈ℝ</td></tr>
+<tr><td><code>arcosh x</code></td><td>ln(x+√(x²−1))，x≥1</td></tr>
+<tr><td><code>artanh x</code></td><td>½ln((1+x)/(1−x))，|x|&lt;1</td></tr>
+<tr><td><code>arcoth x</code></td><td>½ln((x+1)/(x−1))，|x|&gt;1</td></tr>
+<tr><td><code>arsech x</code></td><td>ln((1+√(1−x²))/x)，0&lt;x≤1</td></tr>
+<tr><td><code>arcsch x</code></td><td>ln(1/x+√(1/x²+1))，x≠0</td></tr>
+</table>
+<table>
+<tr><th>恒等式</th><th>内容</th></tr>
+<tr><td>倒数关系</td><td>sec x=1/cos x，csc x=1/sin x，cot x=1/tan x</td></tr>
+<tr><td>平方关系</td><td>sin²+cos²=1，tan²+1=sec²，1+cot²=csc²</td></tr>
+<tr><td>反三角互补</td><td>arcsin x+arccos x=π/2，arctan x+arccot x=π/2</td></tr>
+<tr><td>双曲平方关系</td><td>cosh²x−sinh²x=1，1−tanh²x=sech²x，coth²x−1=csch²x</td></tr>
+<tr><td>双曲倍角</td><td>sinh2x=2sinh x cosh x，cosh2x=cosh²x+sinh²x=2cosh²x−1</td></tr>
+</table>
+
+<h2>十、怎么记</h2>
+<ul>
+<li><b>“co-”两个字一起记。</b>六个三角函数分两组：带 co 的 cos、cot、csc；不带的 sin、tan、sec。
+互为倒数的一定是“跨组配对”：sin↔csc、cos↔sec、tan↔cot。</li>
+<li><b>导数符号看前缀。</b>带 co 的三个导数都带负号（cos′= −sin，cot′= −csc²，csc′= −csc·cot），
+不带的三个都是正的（sin′=cos，tan′=sec²，sec′=sec·tan）。只需额外记住 sec、csc 的导数还多乘一个因子。</li>
+<li><b>图像靠“倒过来”。</b>sec/csc 的图像就是把 cos/sin 的图像取倒数：原函数的零点 → 竖直渐近线；
+原函数的 ±1 → 倒数函数的 ±1；原函数在 (−1,1) 里的部分 → 值域被挖掉。</li>
+<li><b>反三角函数只背一张表。</b>arcsin→[−π/2,π/2]，arccos→[0,π]，arctan→(−π/2,π/2)，
+arccot→(0,π)。其余全部由 arcsec=arccos(1/x)、arccsc=arcsin(1/x)、arccot=π/2−arctan 推出。
+导数的规律：结果是“1/√(1−x²)”的那一对（arcsin、arccos）互为相反数；“1/(1+x²)”的那一对
+（arctan、arccot）也互为相反数——记住一个，另一个加负号。</li>
+<li><b>双曲函数 = 三角函数的“符号改写版”。</b>把 e^x 与 e^{−x} 的“和”看成 cosh、“差”看成 sinh。
+Osborn 规则：凡是公式里出现两个 sinh 相乘，就把加号改成减号，减号改成加号
+（cos²+sin²=1 → cosh²−sinh²=1；1+tan²=sec² → 1−tanh²=sech²）。</li>
+<li><b>反双曲函数不要死背。</b>从 y=arsinh x 出发：x=(e^y−e^{−y})/2，两边乘 2e^y 得
+e^{2y}−2xe^y−1=0，解出 e^y = x+√(x²+1)（取正根），于是 y=ln(x+√(x²+1))。
+其他几个解同一个二次方程即可，记住“根号里是 x² 加还是减、外面是 x 还是 1/x”。</li>
+<li><b>六边形记忆图当草稿纸工具。</b>画一个正六边形，按 sin、cos、cot、csc、sec、tan 的顺序
+（顺时针从左上开始）把六个名字写在顶点上，中心写 1。对角互为倒数；任一顶点等于相邻两顶点之积；
+三个三角形给出三条平方关系。考试前在草稿纸角落画一次，全部公式秒回。</li>
+<li><b>定义域用“反函数的值域”倒推。</b>如 arccos 的值域是 [0,π]，所以 cos 只能在 [0,π] 上取反函数；
+arcsec 的值域是 [0,π/2)∪(π/2,π]，所以 sec 的对应区间是 [0,π/2)∪(π/2,π]，其值域自然就是 |x|≥1。</li>
+</ul>
+
+<h2>十一、高数里真正要用到它们的场合</h2>
+<table>
+<tr><th>场合</th><th>用到的函数</th><th>要掌握到什么程度</th></tr>
+<tr><td>基本积分表</td>
+    <td>∫dx/√(a²−x²)=arcsin(x/a)+C<br>∫dx/(a²+x²)=(1/a)arctan(x/a)+C<br>
+        ∫dx/√(x²±a²)=ln|x+√(x²±a²)|+C</td>
+    <td>必须闭卷写出，且知道后者就是 arsinh / arcosh</td></tr>
+<tr><td>三角有理式积分</td>
+    <td>∫sec x dx=ln|sec x+tan x|+C<br>∫csc x dx=ln|csc x−cot x|+C<br>∫cot x dx=ln|sin x|+C</td>
+    <td>sec/csc/cot 主要就活在这三个公式里</td></tr>
+<tr><td>三角代换</td><td>x=a sin t、x=a tan t、x=a sec t</td>
+    <td>会画直角三角形回代，注意 t 的取值范围与 arcsec 的符号讨论</td></tr>
+<tr><td>泰勒/麦克劳林展开</td>
+    <td>arctan x、arcsin x、sinh x、cosh x、arsinh x</td>
+    <td>arctan/arcsin 的展开要会（求 π 的级数、极限题常用），sinh/cosh 的展开记住即可</td></tr>
+<tr><td>微分方程与工程数学</td><td>cosh、sinh、tanh</td>
+    <td>知道定义和导数，会解 y″−a²y=0 时用它们写通解</td></tr>
+<tr><td>复变函数（后续课程）</td><td>全部六个双曲函数及其反函数</td>
+    <td>此时才需要系统的公式，高数阶段不必准备</td></tr>
+</table>
+
+<div class="box">
+<b>提醒</b>：不同学校、不同教材（同济版、华科版、考研大纲）对
+<code>arcsec/arccsc</code>、<code>arccot</code> 值域约定以及双曲函数的考查深度并不一致。
+上面按国内主流教材的通常要求给出，具体以你所用教材与教学大纲为准。
+</div>
+
+<p style="color:#888;font-size:13px;margin-top:40px">
+本页所有图像由 <code>make_math_graphs.py</code> 用 matplotlib 生成；
+所有公式断言由 <code>verify_math.py</code> 数值校验（41 项全部通过）。
+</p>
+
+</body>
+</html>

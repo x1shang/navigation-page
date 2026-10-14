@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="x1shang 的导航页">
 <meta name="twitter:description" content="我做的各种网页、作品和仓库。">
 <meta name="twitter:image" content="https://navi.x1shang.top/og-cover.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6ec7'/%3E%3Cstop offset='.5' stop-color='%23a78bfa'/%3E%3Cstop offset='1' stop-color='%2367e8f9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230d0d16'/%3E%3Ccircle cx='50' cy='50' r='24' fill='none' stroke='url(%23g)' stroke-width='9'/%3E%3C/svg%3E">
+<link rel="icon" type="image/x-icon" href="绪山真寻的本体.ico">
 <style>
   :root{
     --bg:#08080e;
@@ -66,6 +66,7 @@
         background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:99px;padding:8px 14px;
         cursor:pointer;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transition:border-color .15s}
   .lang:hover{border-color:rgba(201,182,255,.55)}
+  .lang button{border:0;background:none;padding:0 4px;font:inherit;border-radius:4px;backdrop-filter:none}
   .lang .on{color:#c9b6ff;font-weight:650}
 
   /* ───────── 版面 ───────── */
@@ -172,7 +173,7 @@
   .hint{margin:0;line-height:1.9}
   kbd{font:11.5px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--dim)}
 
-  /* 英文错误框 */
+  /* 语言提示框 */
   .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;
          background:rgba(4,4,8,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
   .modal[hidden]{display:none}
@@ -199,7 +200,7 @@
   <div class="vignette"></div>
 </div>
 
-<button class="lang" id="lang" type="button" aria-label="语言 / Language"><span class="on" id="lang-cn">中</span> / <span id="lang-en">Eng</span></button>
+<div class="lang" role="group" aria-label="语言 / Language / 言語"><button class="on" id="lang-cn" type="button" aria-pressed="true">中</button> / <button id="lang-en" type="button" aria-pressed="false">Eng</button> / <button id="lang-ja" type="button" aria-pressed="false">日</button></div>
 
 <main>
   <header>
@@ -207,15 +208,15 @@
     <p class="status" id="status">…<span class="tz"> · 北京时间</span></p>
   </header>
 
-  <!-- 磁贴：默认在每个 8×5 棋盘上随机切成 7 块矩形，正好铺满 -->
+  <!-- 磁贴：默认在每个 8×5 棋盘上随机切成 8 块矩形，正好铺满 -->
   <div class="stage" id="stage" aria-label="入口磁贴">
 
-    <a class="tile" href="./sorting/" data-id="sorting" style="--accent:#ff6ec7" draggable="false">
+    <a class="tile" href="./learning/" data-id="learning" style="--accent:#ff6ec7" draggable="false">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor"
         stroke-width="2.8" stroke-linecap="round">
         <path d="M9 40V30"/><path d="M16.5 40V24"/><path d="M24 40V15"/><path d="M31.5 40V22"/><path d="M39 40V9"/>
       </svg></span>
-      <span class="txt"><span class="label">排序可视化</span><span class="sub">从无序到有序</span></span>
+      <span class="txt"><span class="label">学习可视化</span><span class="sub">排序 · 函数</span></span>
       <span class="handle" title="拖动调整大小，双击复位"></span>
     </a>
 
@@ -239,6 +240,12 @@
         <circle cx="12" cy="7" r="2.2" fill="currentColor" stroke="none"/>
       </svg></span>
       <span class="txt"><span class="label">三体 · 地表观测站</span><span class="sub">Three-Body Simulator</span></span>
+      <span class="handle" title="拖动调整大小，双击复位"></span>
+    </a>
+
+    <a class="tile" href="./octopus.html" data-id="octopus" style="--accent:#cd7459" draggable="false" aria-label="OctopusCopilot">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 27V18a12 12 0 0 1 24 0v9M12 25C2 22 2 38 9 38c5 0 5-7 7-7M36 25c10-3 10 13 3 13-5 0-5-7-7-7M16 29v10c0 6 8 6 8 0V29m8 0v10c0 6-8 6-8 0"/><circle cx="19" cy="19" r="1.5" fill="currentColor"/><circle cx="29" cy="19" r="1.5" fill="currentColor"/></svg></span>
+      <span class="txt"><span class="label">OctopusCopilot</span></span>
       <span class="handle" title="拖动调整大小，双击复位"></span>
     </a>
 
@@ -331,7 +338,7 @@
 <div class="modal" id="modal" hidden>
   <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="enotext">
     <div class="mark" aria-hidden="true">⚠️</div>
-    <p id="enotext">English no good nya, go learn Chinese nya</p>
+    <p id="enotext" lang="ja">私の日本語は悪いですにゃ、日本語を勉強しに行くです</p>
     <button id="ok" type="button">好喵，切回中文</button>
   </div>
 </div>
@@ -393,7 +400,7 @@
     let c = clamp(Math.floor((avail + gap) / (u + gap)), 4, 8);
     if (c % 2) c -= 1;
     cols = c;
-    rows = Math.max(5, Math.ceil((tiles.length * 40 / 7) / cols));   // 7 块正好铺满 8×5 = 40 格
+    rows = Math.max(5, Math.ceil((tiles.length * 40 / 8) / cols));   // 8 块正好铺满 8×5 = 40 格
   }
 
   // 把 cols×rows 的棋盘用随机「断头台切割」切成 n 个矩形，保证每块 ≥2×2 且正好铺满
@@ -485,7 +492,7 @@
   }
 
   /* —— 排版状态：默认每次随机；勾了「记住我的排布」才用 localStorage —— */
-  const LS = 'hub.tiles.v4', SS = 'hub.session.v4', RM = 'hub.remember.v3';
+  const LS = 'hub.tiles.v5', SS = 'hub.session.v5', RM = 'hub.remember.v3';
   const remember = document.getElementById('remember');
   const parse = (s) => { try { return JSON.parse(s || 'null'); } catch { return null; } };
   try { remember.checked = localStorage.getItem(RM) === '1'; } catch {}
@@ -615,15 +622,24 @@
   };
   paint(); setInterval(paint, 60000);
 
-  /* ══ 4. 中 / Eng 切换：切到英文就弹错误框 ═══════════════════ */
+  /* ══ 4. 中 / Eng / 日 入口 ═════════════════════════════ */
   const modal = document.getElementById('modal');
-  const langCn = document.getElementById('lang-cn'), langEn = document.getElementById('lang-en');
-  const setLang = (en) => { langEn.classList.toggle('on', en); langCn.classList.toggle('on', !en); };
-  setLang(false);                                        // 默认中文
-  document.getElementById('lang').addEventListener('click', () => { setLang(true); modal.hidden = false; });
-  document.getElementById('ok').addEventListener('click', () => { setLang(false); modal.hidden = true; });
-  modal.addEventListener('click', (e) => { if (e.target === modal) { setLang(false); modal.hidden = true; } });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) { setLang(false); modal.hidden = true; } });
+  const langCn = document.getElementById('lang-cn'), langJa = document.getElementById('lang-ja');
+  const setLang = (ja) => {
+    langJa.classList.toggle('on', ja); langCn.classList.toggle('on', !ja);
+    langJa.setAttribute('aria-pressed', String(ja)); langCn.setAttribute('aria-pressed', String(!ja));
+  };
+  const closeLanguage = () => { setLang(false); modal.hidden = true; langJa.focus(); };
+  setLang(false);
+  langCn.addEventListener('click', () => { setLang(false); modal.hidden = true; });
+  document.getElementById('lang-en').addEventListener('click', () => { location.href = './octopus.html#onhold'; });
+  langJa.addEventListener('click', () => { setLang(true); modal.hidden = false; document.getElementById('ok').focus(); });
+  document.getElementById('ok').addEventListener('click', closeLanguage);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeLanguage(); });
+  addEventListener('keydown', (e) => {
+    if (!modal.hidden && e.key === 'Escape') closeLanguage();
+    if (!modal.hidden && e.key === 'Tab') { e.preventDefault(); document.getElementById('ok').focus(); }
+  });
 })();
 </script>
 </body>
