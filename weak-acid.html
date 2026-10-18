@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多元弱酸形态分布计算器 · 转载@gxy</title>
+    <meta name="description" content="多元弱酸形态分布计算器：拖动 pH 滑块，查看各形态分布系数与曲线。转载@gxy。">
+    <!-- Chart.js 4.5.1（MIT）本地托管，避免依赖 CDN -->
+    <script src="./vendor/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .header-links {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 14px;
+            font-size: 0.9rem;
+        }
+
+        .header-links .credit {
+            padding: 3px 11px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            letter-spacing: 0.04em;
+        }
+
+        .header-links a {
+            color: #fff;
+            opacity: 0.85;
+            text-decoration: none;
+        }
+
+        .header-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        
+        .input-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        
+        .output-section {
+            flex: 2;
+            min-width: 500px;
+            padding: 20px;
+            margin: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pka-inputs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .pka-input {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .results {
+            margin-top: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .species-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .species-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .instructions {
+            background: #e8f4fc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .instructions h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .acid-info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .input-section, .output-section {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>多元弱酸形态分布计算器</h1>
+            <p class="subtitle">计算多元弱酸在不同pH条件下的形态分布并可视化</p>
+            <div class="header-links">
+                <span class="credit">转载@gxy</span>
+                <a href="./learning/">← 学习可视化</a>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="acidType">选择弱酸类型</label>
+                    <select id="acidType">
+                        <option value="custom">自定义</option>
+                        <option value="phosphoric">磷酸 (H₃PO₄)</option>
+                        <option value="carbonic">碳酸 (H₂CO₃)</option>
+                        <option value="sulfurous">亚硫酸 (H₂SO₃)</option>
+                        <option value="oxalic">草酸 (H₂C₂O₄)</option>
+                        <option value="citric">柠檬酸 (C₆H₈O₇)</option>
+                        <option value="tartaric">酒石酸 (C₄H₆O₆)</option>
+                        <option value="malic">苹果酸 (C₄H₆O₅)</option>
+                        <option value="succinic">琥珀酸 (C₄H₆O₄)</option>
+                        <option value="edta">EDTA (C₁₀H₁₆N₂O₈)</option>
+                        <option value="arsenic">砷酸 (H₃AsO₄)</option>
+                    </select>
+                    <div class="acid-info" id="acidInfo">
+                        <!-- 酸的信息将在这里显示 -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>pKa值</label>
+                    <div class="pka-inputs">
+                        <div class="pka-input">
+                            <input type="number" id="pka1" step="0.01" placeholder="pKa₁" value="2.15">
+                        </div>
+                        <div class="pka-input">
+                            <input type="number" id="pka2" step="0.01" placeholder="pKa₂" value="7.20">
+                        </div>
+                        <div class="pka-input">
+                            <input type="number" id="pka3" step="0.01" placeholder="pKa₃" value="12.35">
+                        </div>
+                        <div class="pka-input">
+                            <input type="number" id="pka4" step="0.01" placeholder="pKa₄">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pH">pH值</label>
+                    <input type="range" id="pH" min="0" max="14" step="0.1" value="7.0">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>0</span>
+                        <span id="pHValue">7.0</span>
+                        <span>14</span>
+                    </div>
+                </div>
+                
+                <button id="calculateBtn">计算分布</button>
+                <button id="plotBtn">生成分布曲线</button>
+                
+                <div class="results">
+                    <h3>当前pH下的形态分布</h3>
+                    <div id="distributionResults">
+                        <!-- 结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h3>分布系数随pH变化曲线</h3>
+                <div class="chart-container">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+                
+                <div class="species-info" id="speciesInfo">
+                    <!-- 物种信息将在这里显示 -->
+                </div>
+                
+                <div class="instructions">
+                    <h3>使用说明</h3>
+                    <ul>
+                        <li>选择预设的弱酸或自定义pKa值</li>
+                        <li>拖动pH滑块查看不同pH下的形态分布</li>
+                        <li>点击"计算分布"查看当前pH下的具体数值</li>
+                        <li>点击"生成分布曲线"查看完整的分布曲线</li>
+                        <li>图表显示各物种在不同pH下的分布系数（0-1）</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预设的多元弱酸pKa值
+        const acidPresets = {
+            phosphoric: {
+                pKa: [2.15, 7.20, 12.35],
+                name: "磷酸 (H₃PO₄)",
+                info: "三元酸，广泛存在于生物体和工业中，是重要的缓冲剂"
+            },
+            carbonic: {
+                pKa: [6.35, 10.33],
+                name: "碳酸 (H₂CO₃)",
+                info: "二元酸，二氧化碳溶于水形成，在血液缓冲系统中起关键作用"
+            },
+            sulfurous: {
+                pKa: [1.85, 7.20],
+                name: "亚硫酸 (H₂SO₃)",
+                info: "二元酸，二氧化硫溶于水形成，用于食品防腐和漂白"
+            },
+            oxalic: {
+                pKa: [1.27, 4.27],
+                name: "草酸 (H₂C₂O₄)",
+                info: "二元酸，存在于许多植物中，用于清洁和漂白"
+            },
+            citric: {
+                pKa: [3.13, 4.76, 6.40],
+                name: "柠檬酸 (C₆H₈O₇)",
+                info: "三元酸，广泛存在于柑橘类水果中，常用作食品酸味剂"
+            },
+            tartaric: {
+                pKa: [3.04, 4.37],
+                name: "酒石酸 (C₄H₆O₆)",
+                info: "二元酸，存在于葡萄等水果中，用于食品和制药工业"
+            },
+            malic: {
+                pKa: [3.40, 5.10],
+                name: "苹果酸 (C₄H₆O₅)",
+                info: "二元酸，存在于苹果等水果中，赋予水果酸味"
+            },
+            succinic: {
+                pKa: [4.21, 5.64],
+                name: "琥珀酸 (C₄H₆O₄)",
+                info: "二元酸，存在于琥珀和许多生物体中，用于食品和制药"
+            },
+            edta: {
+                pKa: [2.0, 2.69, 6.13, 10.37],
+                name: "EDTA (C₁₀H₁₆N₂O₈)",
+                info: "四元酸，强螯合剂，用于分析化学和水处理"
+            },
+            arsenic: {
+                pKa: [2.26, 6.76, 11.29],
+                name: "砷酸 (H₃AsO₄)",
+                info: "三元酸，砷的含氧酸，主要用于木材防腐剂"
+            },
+            custom: {
+                pKa: [],
+                name: "自定义",
+                info: "输入自定义的pKa值计算任意多元弱酸"
+            }
+        };
+
+        // 获取DOM元素
+        const acidTypeSelect = document.getElementById('acidType');
+        const pka1Input = document.getElementById('pka1');
+        const pka2Input = document.getElementById('pka2');
+        const pka3Input = document.getElementById('pka3');
+        const pka4Input = document.getElementById('pka4');
+        const pHSlider = document.getElementById('pH');
+        const pHValue = document.getElementById('pHValue');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const plotBtn = document.getElementById('plotBtn');
+        const distributionResults = document.getElementById('distributionResults');
+        const speciesInfo = document.getElementById('speciesInfo');
+        const acidInfo = document.getElementById('acidInfo');
+        
+        // 图表变量
+        let distributionChart = null;
+        
+        // 颜色方案
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#7EB26D', '#E6194B',
+            '#3CB44B', '#4363D8', '#F58231', '#911EB4'
+        ];
+        
+        // 更新pH值显示
+        pHSlider.addEventListener('input', function() {
+            pHValue.textContent = this.value;
+        });
+        
+        // 选择弱酸类型事件
+        acidTypeSelect.addEventListener('change', function() {
+            const selectedAcid = this.value;
+            const acidData = acidPresets[selectedAcid];
+            
+            // 更新pKa输入框
+            pka1Input.value = acidData.pKa[0] || '';
+            pka2Input.value = acidData.pKa[1] || '';
+            pka3Input.value = acidData.pKa[2] || '';
+            pka4Input.value = acidData.pKa[3] || '';
+            
+            // 更新酸的信息
+            acidInfo.textContent = acidData.info;
+            
+            // 自动计算并绘图
+            if (selectedAcid !== 'custom') {
+                setTimeout(() => {
+                    plotDistributionCurve(acidData.pKa);
+                    const pH = parseFloat(pHSlider.value);
+                    const distribution = calculateDistribution(acidData.pKa, pH);
+                    const speciesNames = getSpeciesNames(acidData.pKa.length);
+                    displayDistributionResults(pH, distribution, speciesNames);
+                    displaySpeciesInfo(speciesNames);
+                }, 100);
+            }
+        });
+        
+        // 计算分布系数函数
+        function calculateDistribution(pKaValues, pH) {
+            const H = Math.pow(10, -pH);
+            const n = pKaValues.length;
+            const KaValues = pKaValues.map(pKa => Math.pow(10, -pKa));
+            
+            // 计算分母
+            let denominatorTerms = [1.0]; // 完全质子化形式
+            
+            for (let i = 0; i < n; i++) {
+                let term = 1.0;
+                for (let j = 0; j <= i; j++) {
+                    term *= KaValues[j] / H;
+                }
+                denominatorTerms.push(term);
+            }
+            
+            const denominator = denominatorTerms.reduce((sum, term) => sum + term, 0);
+            
+            // 计算各物种的分布系数
+            const distribution = denominatorTerms.map(term => term / denominator);
+            
+            return distribution;
+        }
+        
+        // 获取物种名称
+        function getSpeciesNames(pKaCount) {
+            const names = [];
+            for (let i = 0; i <= pKaCount; i++) {
+                if (i === 0) {
+                    names.push(`H${pKaCount}A`); // 完全质子化形式
+                } else if (i === pKaCount) {
+                    names.push(`A${pKaCount}-`); // 完全去质子化形式
+                } else {
+                    names.push(`H${pKaCount - i}A${i}-`); // 中间形式
+                }
+            }
+            return names;
+        }
+        
+        // 显示当前pH下的分布结果
+        function displayDistributionResults(pH, distribution, speciesNames) {
+            let html = '';
+            distribution.forEach((frac, index) => {
+                const percentage = (frac * 100).toFixed(2);
+                html += `
+                    <div class="result-item">
+                        <span>${speciesNames[index]}:</span>
+                        <span>${frac.toFixed(4)} (${percentage}%)</span>
+                    </div>
+                `;
+            });
+            distributionResults.innerHTML = html;
+        }
+        
+        // 显示物种信息
+        function displaySpeciesInfo(speciesNames) {
+            let html = '';
+            speciesNames.forEach((name, index) => {
+                html += `
+                    <div style="display: flex; align-items: center;">
+                        <span class="species-color" style="background-color: ${colors[index % colors.length]}"></span>
+                        <span>${name}</span>
+                    </div>
+                `;
+            });
+            speciesInfo.innerHTML = html;
+        }
+        
+        // 生成分布曲线
+        function plotDistributionCurve(pKaValues) {
+            const pHRange = [];
+            for (let pH = 0; pH <= 14; pH += 0.1) {
+                pHRange.push(pH);
+            }
+            
+            const speciesNames = getSpeciesNames(pKaValues.length);
+            const datasets = [];
+            
+            // 为每个物种准备数据
+            for (let i = 0; i < speciesNames.length; i++) {
+                const data = [];
+                for (let pH = 0; pH <= 14; pH += 0.1) {
+                    const distribution = calculateDistribution(pKaValues, pH);
+                    data.push(distribution[i]);
+                }
+                
+                datasets.push({
+                    label: speciesNames[i],
+                    data: data,
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: colors[i % colors.length] + '40', // 添加透明度
+                    borderWidth: 2,
+                    fill: false
+                });
+            }
+            
+            // 销毁现有图表
+            if (distributionChart) {
+                distributionChart.destroy();
+            }
+            
+            // 创建新图表
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: pHRange.map(pH => pH.toFixed(1)),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'pH'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '分布系数'
+                            },
+                            min: 0,
+                            max: 1
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 计算按钮事件
+        calculateBtn.addEventListener('click', function() {
+            // 获取pKa值
+            const pKaValues = [];
+            if (pka1Input.value) pKaValues.push(parseFloat(pka1Input.value));
+            if (pka2Input.value) pKaValues.push(parseFloat(pka2Input.value));
+            if (pka3Input.value) pKaValues.push(parseFloat(pka3Input.value));
+            if (pka4Input.value) pKaValues.push(parseFloat(pka4Input.value));
+            
+            if (pKaValues.length === 0) {
+                alert('请输入至少一个pKa值');
+                return;
+            }
+            
+            const pH = parseFloat(pHSlider.value);
+            const distribution = calculateDistribution(pKaValues, pH);
+            const speciesNames = getSpeciesNames(pKaValues.length);
+            
+            displayDistributionResults(pH, distribution, speciesNames);
+            displaySpeciesInfo(speciesNames);
+        });
+        
+        // 绘图按钮事件
+        plotBtn.addEventListener('click', function() {
+            // 获取pKa值
+            const pKaValues = [];
+            if (pka1Input.value) pKaValues.push(parseFloat(pka1Input.value));
+            if (pka2Input.value) pKaValues.push(parseFloat(pka2Input.value));
+            if (pka3Input.value) pKaValues.push(parseFloat(pka3Input.value));
+            if (pka4Input.value) pKaValues.push(parseFloat(pka4Input.value));
+            
+            if (pKaValues.length === 0) {
+                alert('请输入至少一个pKa值');
+                return;
+            }
+            
+            plotDistributionCurve(pKaValues);
+            const speciesNames = getSpeciesNames(pKaValues.length);
+            displaySpeciesInfo(speciesNames);
+        });
+        
+        // 初始化页面
+        function init() {
+            // 默认显示磷酸的分布
+            const acidData = acidPresets.phosphoric;
+            acidTypeSelect.value = 'phosphoric';
+            const pH = parseFloat(pHSlider.value);
+            const distribution = calculateDistribution(acidData.pKa, pH);
+            const speciesNames = getSpeciesNames(acidData.pKa.length);
+            
+            acidInfo.textContent = acidData.info;
+            displayDistributionResults(pH, distribution, speciesNames);
+            displaySpeciesInfo(speciesNames);
+            plotDistributionCurve(acidData.pKa);
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
