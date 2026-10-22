@@ -33,7 +33,7 @@
     const theme = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
     document.documentElement.dataset.theme = theme;
     const meta = document.getElementById('theme-color');
-    if (meta) meta.content = theme === 'dark' ? '#08080e' : '#e9f0f2';
+    if (meta) meta.content = theme === 'dark' ? '#08080e' : '#f4f5f7';
   })();
 </script>
 <style>
@@ -76,6 +76,7 @@
     --hover-line:rgba(201,182,255,.55);
     --hover-fg:#c9b6ff;
     --title:linear-gradient(100deg,#ffd9f0,#e9d5ff 50%,#cffafe);
+    --title-ink:transparent;               /* 暗色：透明字 + 上面的渐变当底色 */
     --sel:rgba(201,182,255,.32);
 
     /* 状态与浮层 */
@@ -99,15 +100,12 @@
     --mx:50vw; --my:30vh;     /* 指针位置，驱动背景光斑与遮罩 */
   }
 
-  /* 亮色：底 #e9f0f2 + 三层极淡的径向色（青绿 / 湖蓝 / 杏），湿球计算器同款配方 */
+  /* 亮色：底色跟 x1shang.top 首页一致（--cloud #f4f5f7 + 右上一团白），
+     标题直接用那边超链接的蓝 #2f6fb5；其余玻璃/强调色保持原样 */
   html[data-theme="light"]{
     color-scheme:light;
-    --bg:#e9f0f2;
-    --wash:
-      radial-gradient(120% 90% at 8% 0%,rgba(71,148,157,.20),transparent 58%),
-      radial-gradient(100% 80% at 100% 8%,rgba(96,176,186,.22),transparent 60%),
-      radial-gradient(90% 70% at 50% 108%,rgba(255,196,128,.16),transparent 62%),
-      linear-gradient(180deg,#eef5f7,#dfeaee 55%,#e8f0f2);
+    --bg:#f4f5f7;
+    --wash:radial-gradient(ellipse at 72% 30%,#ffffff,transparent 62%);
     --blob-a:rgba(255,138,196,.32);
     --blob-b:rgba(96,176,186,.34);
     --spot:radial-gradient(circle,rgba(255,255,255,.7),transparent 62%);
@@ -135,7 +133,8 @@
 
     --hover-line:rgba(109,64,199,.42);
     --hover-fg:#6d46c9;
-    --title:linear-gradient(100deg,#c02a86,#7b3fd4 50%,#0e7490);
+    --title:none;
+    --title-ink:#2f6fb5;
     --sel:rgba(124,58,237,.18);
 
     --todo-accent:#b45309;
@@ -208,7 +207,7 @@
   header{text-align:center;margin-bottom:30px}
   h1{margin:0 0 12px;font-size:clamp(21px,3.2vw,27px);font-weight:650;letter-spacing:.01em;
      background:var(--title);
-     -webkit-background-clip:text;background-clip:text;color:transparent}
+     -webkit-background-clip:text;background-clip:text;color:var(--title-ink)}
   .status{margin:0;font-size:13px;color:var(--status)}
   .status .tz{color:var(--status-tz)}
 
@@ -520,7 +519,7 @@
   function paintTheme() {
     const t = nowTheme(), dark = t === 'dark';
     root.dataset.theme = t;
-    if (themeMeta) themeMeta.content = dark ? '#08080e' : '#e9f0f2';
+    if (themeMeta) themeMeta.content = dark ? '#08080e' : '#f4f5f7';
     const label = dark ? '切换到浅色主题' : '切换到深色主题';
     themeBtn.title = label + '（Shift 点击跟随系统）';
     themeBtn.setAttribute('aria-label', label);
