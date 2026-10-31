@@ -10,17 +10,17 @@
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body><main>
-<header><div><div class="eyebrow">ALGORITHM PLAYGROUND / 排序实验室</div><h1>从无序，到有序。</h1><p>跟随每一根柱子的移动，看六种算法如何把噪音排列成阶梯。</p></div><span class="badge">6 种算法 · 同一组起点</span></header>
+<header><div><div class="eyebrow">ALGORITHM PLAYGROUND / 排序实验室</div><h1>从无序，到有序。</h1><p>跟随每一根柱子的移动，看九种算法如何把噪音排列成阶梯。</p></div><span class="badge">9 种算法 · 同一组起点</span></header>
 <section class="controls" aria-label="播放控制">
 <button class="primary" id="play">▶ 开始排序</button><button id="step">单步 →</button><button id="reset">↺ 重播本组</button><button id="shuffle">⤨ 换一组数据</button>
 <span class="spacer"></span><label>柱子<select id="count"><option>12</option><option selected>24</option><option>40</option><option>64</option></select></label>
 <label>速度<input id="speed" type="range" min="1" max="10" value="5"><output id="speedText">5 档</output></label>
-<label>视图<select id="view"><option value="all">六种对比</option><option value="0">冒泡排序</option><option value="1">选择排序</option><option value="2">插入排序</option><option value="3">归并排序</option><option value="4">快速排序</option><option value="5">堆排序</option></select></label>
+<label>视图<select id="view"><option value="all">九种对比</option><option value="0">冒泡排序</option><option value="1">选择排序</option><option value="2">插入排序</option><option value="3">归并排序</option><option value="4">快速排序</option><option value="5">堆排序</option><option value="6">Powersort</option><option value="7">内省排序</option><option value="8">基数排序</option></select></label>
 </section>
 <div class="legend"><span><i class="dot" style="background:var(--blue)"></i>待排序</span><span><i class="dot" style="background:var(--yellow)"></i>正在比较 / 基准</span><span><i class="dot" style="background:var(--pink)"></i>正在移动</span><span><i class="dot" style="background:var(--green)"></i>已到最终位置</span><span class="overall" id="overall" aria-live="polite">准备就绪</span></div>
 <div class="grid" id="grid"></div>
-<p class="foot">每一步展示一次比较、移动或位置确认；各算法同时推进一个演示步骤，动画时长不代表实际运行耗时。下方暂存区展示插入排序的待插入元素和归并排序的辅助数组。柱子越高，数值越大。</p>
-</main>
+<p class="foot">每一步展示一次比较、移动或位置确认；各算法同时推进一个演示步骤，动画时长不代表实际运行耗时。下方暂存区展示插入、归并和分桶过程。Powersort 演示自然段与 power 归并策略，省略工业实现的 minrun 和 galloping；内省排序使用 8 元素的小区间阈值。基数排序的比较次数为 0，分桶和写回仍计作移动。柱子越高，数值越大。</p>
+<p class="foot">算法资料：<a href="https://powersort.github.io/" style="color:var(--green)">Powersort 作者项目</a> · <a href="https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_algo.h" style="color:var(--green)">GCC 排序实现</a></p></main>
 <script>
 const definitions=[
  ['冒泡排序','BUBBLE SORT','O(n²)','相邻两柱比较交换，让较大的柱子逐轮移到右端。'],
@@ -28,7 +28,11 @@ const definitions=[
  ['插入排序','INSERTION SORT','O(n²)','取出一根柱子，将左侧较大的柱子右移，再插入空位。'],
  ['归并排序','MERGE SORT','O(n log n)','把相邻有序段合并进暂存区，再按顺序写回。'],
  ['快速排序','QUICK SORT','平均 O(n log n)','选择右端柱子作基准，分区后递归排列左右两边。'],
- ['堆排序','HEAP SORT','O(n log n)','建立最大堆，把堆顶最大值移到末端，再调整剩余堆。']
+ ['堆排序','HEAP SORT','O(n log n)','建立最大堆，把堆顶最大值移到末端，再调整剩余堆。'],
+ ['Powersort','NATURAL RUNS + NODE POWER','O(n log n)','识别自然有序段，以边界 power 决定归并顺序；演示核心策略，省略 minrun 与 galloping 优化。'],
+ ['内省排序','INTROSORT','O(n log n)','快速分区；递归过深切换堆排序，小区间用插入排序。'],
+ ['基数排序','LSD RADIX / BASE 4','O(d(n + 4))','非负整数按四进制位稳定分桶，从低位到高位重组；d 为位数，不依赖大小比较。'],
+ ['苏联排序','AN UNEXPECTED HISTORY','彩蛋','四个阶段的玩笑演示；删除、涂绿与清空都不是真正的排序。']
 ];
 function buildTrace(kind,input){
  let a=input.slice(),aux=Array(a.length).fill(null),fixed=new Set(),frames=[],comparisons=0,moves=0;
@@ -42,22 +46,48 @@ function buildTrace(kind,input){
  if(kind===3){for(let width=1;width<a.length;width*=2){for(let left=0;left<a.length;left+=2*width){const mid=Math.min(left+width,a.length),right=Math.min(left+2*width,a.length);if(mid===right)continue;let i=left,j=mid,k=left;while(i<mid||j<right){let take;if(i<mid&&j<right){compare(a[i],a[j],'比较两个有序段的首个未取出元素。');take=a[i]<=a[j]?i++:j++;}else take=i<mid?i++:j++;const id=a[take];aux[k++]=id;a[take]=null;moves++;emit('把较小的柱子依次放入下方辅助数组。',[id],'move');}for(let t=left;t<right;t++){const id=aux[t];a[t]=id;aux[t]=null;moves++;emit('将合并后的有序段从辅助数组写回。',[id],'move');}}}}
  if(kind===4){function quick(lo,hi){if(lo>hi)return;if(lo===hi){fixed.add(a[lo]);emit('单元素分区已到最终位置。',[]);return;}const pivot=a[hi];emit('选择当前分区最右端的柱子作为基准。',[pivot]);let p=lo;for(let j=lo;j<hi;j++){compare(a[j],pivot,'与基准比较：较小值放到分区左侧。');if(a[j]<pivot){swap(p,j,'将小于基准的柱子交换到左侧。');p++;}}swap(p,hi,'将基准交换到左右分区之间。');fixed.add(pivot);emit('基准已到最终位置，继续处理左右两区。',[]);quick(lo,p-1);quick(p+1,hi);}quick(0,a.length-1);}
  if(kind===5){function sift(root,size){while(true){let largest=root,l=2*root+1,r=l+1;if(l<size){compare(a[largest],a[l],'比较堆中的父节点与左子节点。');if(a[l]>a[largest])largest=l;}if(r<size){compare(a[largest],a[r],'比较当前最大节点与右子节点。');if(a[r]>a[largest])largest=r;}if(largest===root)break;swap(root,largest,'较大子节点上移，恢复最大堆。');root=largest;}}for(let i=Math.floor(a.length/2)-1;i>=0;i--)sift(i,a.length);emit('最大堆建立完成，最左端是当前最大值。',[]);for(let end=a.length-1;end>0;end--){swap(0,end,'把堆顶最大值交换到未排序区域的末端。');fixed.add(a[end]);emit('末端最大值已固定，重新调整剩余堆。',[]);sift(0,end);}}
+
+ if(kind===6){
+  const runs=[];let l=0;
+  while(l<a.length){let r=l+1,desc=false;if(r<a.length){compare(a[l],a[r],'识别自然有序段的方向。');desc=a[l]>a[r];r++;while(r<a.length){compare(a[r-1],a[r],'延长当前自然有序段。');if(desc?a[r-1]<=a[r]:a[r-1]>a[r])break;r++;}}if(desc)for(let i=l,j=r-1;i<j;i++,j--)swap(i,j,'反转严格递减段，使其升序。');runs.push({l,r});emit('发现有序段 ['+l+', '+r+')。');l=r;}
+  function merge(u,v){const values=[];let i=u.l,j=v.l;while(i<u.r||j<v.r){let k;if(i<u.r&&j<v.r){compare(a[i],a[j],'按 power 策略归并相邻有序段。');k=a[i]<=a[j]?i++:j++;}else k=i<u.r?i++:j++;values.push(a[k]);aux[u.l+values.length-1]=a[k];a[k]=null;moves++;emit('柱子进入归并暂存区。',[values.at(-1)],'move');}for(let k=0;k<values.length;k++){a[u.l+k]=values[k];aux[u.l+k]=null;moves++;emit('写回归并结果。',[values[k]],'move');}return {l:u.l,r:v.r};}
+  function power(u,v){let x=(u.l+u.r)/(2*a.length),y=(v.l+v.r)/(2*a.length),p=0;do{p++;x*=2;y*=2;if(Math.floor(x)!==Math.floor(y))return p;x-=Math.floor(x);y-=Math.floor(y);}while(p<64);return p;}
+  const stack=[],powers=[];if(runs.length)stack.push(runs[0]);for(let k=1;k<runs.length;k++){const p=power(runs[k-1],runs[k]);emit('相邻自然段的边界 power = '+p+'；较深的边界优先归并。');while(powers.length&&powers.at(-1)>=p){const v=stack.pop(),u=stack.pop();powers.pop();stack.push(merge(u,v));}powers.push(p);stack.push(runs[k]);}while(stack.length>1){const v=stack.pop(),u=stack.pop();stack.push(merge(u,v));}
+ }
+ if(kind===7){
+  function heap(lo,hi){const size=hi-lo+1;function sift(root,n){for(;;){let c=root*2+1;if(c>=n)return;if(c+1<n){compare(a[lo+c],a[lo+c+1],'堆回退：选择较大子节点。');if(a[lo+c]<a[lo+c+1])c++;}compare(a[lo+root],a[lo+c],'堆回退：恢复最大堆。');if(a[lo+root]>=a[lo+c])return;swap(lo+root,lo+c,'堆回退：交换父子节点。');root=c;}}for(let i=Math.floor(size/2)-1;i>=0;i--)sift(i,size);for(let n=size-1;n>0;n--){swap(lo,lo+n,'堆回退：取出最大值。');sift(0,n);}}
+  function intro(lo,hi,depth){if(lo>=hi)return;if(hi-lo<8){emit('小区间切换插入排序。');for(let i=lo+1;i<=hi;i++)for(let j=i;j>lo;j--){compare(a[j-1],a[j],'插入排序整理小区间。');if(a[j-1]<=a[j])break;swap(j-1,j,'插入排序交换相邻逆序项。');}return;}if(depth===0){emit('达到深度上限，切换堆排序保证最坏界。');heap(lo,hi);return;}const pivot=a[Math.floor((lo+hi)/2)];let i=lo,j=hi;while(i<=j){while(i<=hi){compare(a[i],pivot,'快速分区：从左寻找不小于基准的项。');if(a[i]>=pivot)break;i++;}while(j>=lo){compare(a[j],pivot,'快速分区：从右寻找不大于基准的项。');if(a[j]<=pivot)break;j--;}if(i<=j){swap(i,j,'快速分区交换两侧元素。');i++;j--;}}intro(lo,j,depth-1);intro(i,hi,depth-1);}intro(0,a.length-1,2*Math.floor(Math.log2(a.length||1)));
+ }
+ if(kind===8){for(let place=1;place<=Math.max(0,...a);place*=4){const buckets=[[],[],[],[]];for(let i=0;i<a.length;i++){const id=a[i],digit=Math.floor(id/place)%4;buckets[digit].push(id);aux[i]=id;a[i]=null;moves++;emit('按位权 '+place+' 分入桶 '+digit+'（保持桶内顺序）。',[id],'move');}const ordered=buckets.flat();aux.fill(null);ordered.forEach((id,i)=>aux[i]=id);emit('按桶 0 → 3 收集。',[],'move');for(let i=0;i<ordered.length;i++){a[i]=ordered[i];aux[i]=null;moves++;emit('稳定写回当前位的结果。',[a[i]],'move');}}}
+ if(kind===9){
+  const keep=new Set(),removed=[];let max=-Infinity;
+  const phase=(name,message,active=[])=>{emit(message,active,'move');frames.at(-1).phase=name;};
+  phase('斯大林排序','开始审查：只保留不小于此前保留最大值的柱子。');
+  for(const id of input){comparisons++;if(id>=max){keep.add(id);max=id;phase('斯大林排序','符合顺序，保留。',[id]);}else{removed.push(id);a=a.filter(x=>x!==id);a.push(null);moves++;phase('斯大林排序','不符合顺序，删除这根柱子。',[id]);}}
+  for(let i=0;i<5;i++)phase('斯大林排序','剩余柱子已升序；删除元素不算完成排序。');
+  for(const id of removed){keep.add(id);a=input.filter(x=>keep.has(x));while(a.length<input.length)a.push(null);moves++;phase('赫鲁晓夫排序','把删除的柱子按原来的相对位置插回去。',[id]);}
+  a=input.slice();phase('赫鲁晓夫排序','全部恢复，数组回到原来的顺序。');
+  fixed=new Set(a);for(let i=0;i<7;i++)phase('勃列日涅夫排序','全部涂绿，宣布：排序完毕！（实际上仍未排序）');
+  fixed.clear();for(let i=0;i<input.length;i++){const id=a[i];a[i]=null;moves++;phase('戈尔巴乔夫排序','解散整个数组。',[id]);}
+  phase('戈尔巴乔夫排序','数组已解散。彩蛋结束；这不是一个排序算法。');return frames;
+ }
+
  fixed=new Set(a);emit('排序完成：左侧最矮，右侧最高。',[]);return frames;
 }
-const $=id=>document.getElementById(id);let input=[],panels=[],running=false,lastTime=0;
+const $=id=>document.getElementById(id);let input=[],panels=[],running=false,lastTime=0,easterUnlocked=false;
 const interval=()=>[0,1000,700,480,320,220,150,100,65,40,20][+$('speed').value];
 function createPanel(index){const d=definitions[index],el=document.createElement('article');el.className='card';el.innerHTML=`<div class="card-top"><div><h2>${d[0]}</h2><div class="english">${d[1]}</div></div><span class="complexity">${d[2]}</span></div><div class="idea">${d[3]}</div><svg viewBox="0 0 440 275" role="img" aria-label="${d[0]}柱形动画"><text x="20" y="18" class="chart-label">主数组 · 从小到大 →</text><line x1="20" y1="179" x2="420" y2="179" class="baseline"/><text x="20" y="205" class="chart-label">暂存区</text><line x1="20" y1="259" x2="420" y2="259" class="baseline"/><g class="bars"></g></svg><div class="status"></div><div class="stats"><span>比较<b class="comparisons">0</b></span><span>移动<b class="moves">0</b></span><span>步骤<b class="steps">0</b></span></div><div class="track"><div class="progress"></div></div>`;
  $('grid').append(el);const group=el.querySelector('.bars'),bars=new Map(),w=400/input.length;
  for(const id of input){const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');rect.setAttribute('width',Math.max(2,w-3));rect.setAttribute('height',140*id/input.length);rect.setAttribute('rx','2');rect.classList.add('bar');const title=document.createElementNS('http://www.w3.org/2000/svg','title');title.textContent=`数值 ${id}`;rect.append(title);group.append(rect);bars.set(id,rect);}
  return {el,bars,frames:buildTrace(index,input),cursor:0};}
-function render(p){const f=p.frames[p.cursor],fixed=new Set(f.fixed),active=new Set(f.active),w=400/input.length;for(const [row,base,scale] of [[f.a,179,1],[f.aux,259,.29]]){row.forEach((id,i)=>{if(id===null)return;const b=p.bars.get(id),h=140*id/input.length;b.style.transform=`translate(${20+i*w}px,${base-h*scale}px) scale(1,${scale})`;b.setAttribute('class','bar'+(fixed.has(id)?' sorted':active.has(id)?' '+f.type:''));});}p.el.querySelector('.status').textContent=f.message;p.el.querySelector('.comparisons').textContent=f.comparisons;p.el.querySelector('.moves').textContent=f.moves;p.el.querySelector('.steps').textContent=`${p.cursor} / ${p.frames.length-1}`;p.el.querySelector('.progress').style.width=`${100*p.cursor/(p.frames.length-1)}%`;}
+function render(p){for(const bar of p.bars.values())bar.style.opacity='0';const f=p.frames[p.cursor],fixed=new Set(f.fixed),active=new Set(f.active),w=400/input.length;for(const [row,base,scale] of [[f.a,179,1],[f.aux,259,.29]]){row.forEach((id,i)=>{if(id===null)return;const b=p.bars.get(id);b.style.opacity='1';const h=140*id/input.length;b.style.transform=`translate(${20+i*w}px,${base-h*scale}px) scale(1,${scale})`;b.setAttribute('class','bar'+(fixed.has(id)?' sorted':active.has(id)?' '+f.type:''));});}if(f.phase)p.el.querySelector('h2').textContent='苏联排序 · '+f.phase;p.el.querySelector('.status').textContent=f.message;p.el.querySelector('.comparisons').textContent=f.comparisons;p.el.querySelector('.moves').textContent=f.moves;p.el.querySelector('.steps').textContent=`${p.cursor} / ${p.frames.length-1}`;p.el.querySelector('.progress').style.width=`${100*p.cursor/(p.frames.length-1)}%`;}
 function selected(){return panels.filter((p,i)=>$('view').value==='all'||i===+$('view').value);}
 function updateStatus(){const ps=selected(),done=ps.filter(p=>p.cursor===p.frames.length-1).length;$('overall').textContent=done===ps.length?'全部完成 ✓':`${done} / ${ps.length} 完成`;$('play').textContent=running?'❚❚ 暂停':done===ps.length?'↺ 再看一次':'▶ 继续 / 开始';}
 function pause(){running=false;updateStatus();}
-function advance(){let advanced=false;for(const p of selected()){if(p.cursor<p.frames.length-1){p.cursor++;render(p);advanced=true;}}if(!advanced||selected().every(p=>p.cursor===p.frames.length-1))running=false;updateStatus();}
-function rebuild(randomize){running=false;if(randomize){input=Array.from({length:+$('count').value},(_,i)=>i+1);for(let i=input.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[input[i],input[j]]=[input[j],input[i]];}}$('grid').innerHTML='';panels=definitions.map((_,i)=>createPanel(i));panels.forEach(render);applyView();$('overall').textContent='准备就绪';$('play').textContent='▶ 开始排序';}
+function advance(){let advanced=false;for(const p of selected()){if(p===panels[9]&&$('view').value==='all'&&panels.slice(0,9).some(q=>q.cursor<q.frames.length-1))continue;if(p.cursor<p.frames.length-1){p.cursor++;render(p);advanced=true;}}if(!advanced||selected().every(p=>p.cursor===p.frames.length-1))running=false;updateStatus();}
+function rebuild(randomize){running=false;if(randomize){input=Array.from({length:+$('count').value},(_,i)=>i+1);for(let i=input.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[input[i],input[j]]=[input[j],input[i]];}}$('grid').innerHTML='';panels=definitions.slice(0,easterUnlocked?10:9).map((_,i)=>createPanel(i));panels.forEach(render);applyView();$('overall').textContent='准备就绪';$('play').textContent='▶ 开始排序';}
 function applyView(){panels.forEach((p,i)=>p.el.classList.toggle('hidden',$('view').value!=='all'&&i!==+$('view').value));$('grid').classList.toggle('focus',$('view').value!=='all');updateStatus();}
 $('play').onclick=()=>{if(running){pause();return;}if(selected().every(p=>p.cursor===p.frames.length-1)){selected().forEach(p=>{p.cursor=0;render(p);});}running=true;lastTime=performance.now();updateStatus();};
-$('step').onclick=()=>{pause();advance();};$('reset').onclick=()=>rebuild(false);$('shuffle').onclick=()=>rebuild(true);$('count').onchange=()=>rebuild(true);$('view').onchange=()=>{pause();applyView();};$('speed').oninput=()=>{$('speedText').textContent=$('speed').value+' 档';document.documentElement.style.setProperty('--duration',Math.round(interval()*.8)+'ms');};
+$('step').onclick=()=>{pause();advance();};$('reset').onclick=()=>rebuild(false);$('shuffle').onclick=()=>{if(!easterUnlocked){const option=document.createElement('option');option.value='9';option.textContent='苏联排序 · 彩蛋';$('view').append(option);}easterUnlocked=true;rebuild(true)};$('count').onchange=()=>rebuild(true);$('view').onchange=()=>{pause();applyView();};$('speed').oninput=()=>{$('speedText').textContent=$('speed').value+' 档';document.documentElement.style.setProperty('--duration',Math.round(interval()*.8)+'ms');};
 function tick(t){if(running&&t-lastTime>=interval()){lastTime=t;advance();}requestAnimationFrame(tick);}rebuild(true);$('speed').oninput();requestAnimationFrame(tick);
 </script></body></html>
