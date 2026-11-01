@@ -11,8 +11,8 @@
 <nav><a href="../learning/">← 学习可视化</a></nav>
 <header class="hero"><div><span class="eyebrow">COLOR REFERENCE / 颜色参考</span><h1>给颜色，一个名字。</h1><p>从常用色中寻找灵感，也可以自己调出喜欢的颜色。</p></div><div class="hero-art" aria-hidden="true"><i></i><i></i><i></i><i></i></div></header>
 <section aria-labelledby="palette-title">
-<div class="section-heading"><div><span class="eyebrow">01 / COLOR PALETTE</span><h2 id="palette-title">常用色卡</h2><p>颜色相同，表达方式可以不同。选择格式，查看每个色块对应的值。</p></div><label class="format-label" for="format">显示格式<select id="format"><option value="name">Turtle 颜色名称</option><option value="rgb">RGB（0–255）</option><option value="hex">RGB 十六进制</option><option value="float">RGB 浮点数（0–1）</option><option value="percent">RGB 百分比</option><option value="cmyk">CMYK（百分比）</option></select></label></div>
-<p class="note">名称与色值参考 Python Turtle 使用的 Tk 颜色表；同名颜色在其他标准中可能不同。</p>
+<div class="section-heading"><div><span class="eyebrow">01 / COLOR PALETTE</span><h2 id="palette-title">常用色卡</h2><p>颜色相同，表达方式可以不同。选择格式，查看每个色块对应的值。</p></div><label class="format-label" for="format">显示格式<select id="format"><option value="name">Turtle 颜色名称</option><option value="rgb">RGB（0–255）</option><option value="hex">RGB 十六进制</option><option value="float">RGB 浮点数（0–1）</option><option value="percent">RGB 百分比</option><option value="gray">灰度值（0–255）</option><option value="cmyk">CMYK（百分比）</option></select></label></div>
+<p class="note">名称与色值参考 Python Turtle 使用的 Tk 颜色表；同名颜色在其他标准中可能不同。灰度值基于 sRGB 相对亮度计算，0 为黑、255 为白。</p>
 <div class="palette" id="palette" aria-label="常用颜色列表"></div>
 </section>
 <section class="custom-section" aria-labelledby="custom-title"><div class="section-heading"><div><span class="eyebrow">02 / MIX YOUR OWN</span><h2 id="custom-title">自选颜色</h2><p>选取颜色或输入十六进制色值，下方跟随上面的格式同步变化。</p></div></div>

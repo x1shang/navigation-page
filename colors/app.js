@@ -18,6 +18,15 @@
       case 'hex': return hex;
       case 'float': return `(${values.map(value => (value / 255).toFixed(3)).join(', ')})`;
       case 'percent': return `(${values.map(value => (value / 255 * 100).toFixed(1) + '%').join(', ')})`;
+      case 'gray': {
+        const linear = values.map(value => {
+          const channel = value / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+        const luminance = linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+        const gray = luminance <= 0.0031308 ? 12.92 * luminance : 1.055 * luminance ** (1 / 2.4) - 0.055;
+        return String(Math.round(gray * 255));
+      }
       case 'cmyk': {
         const channels = values.map(value => value / 255);
         const k = 1 - Math.max(...channels);
