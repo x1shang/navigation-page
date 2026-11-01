@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>色卡 · 学习可视化</title>
+<meta name="description" content="浏览 Turtle 常用颜色，转换 RGB、十六进制、CMYK 等颜色表示，或自选颜色。">
+<link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="./style.css">
+<script defer src="./data.js"></script><script defer src="./app.js"></script>
+</head>
+<body><main>
+<nav><a href="../learning/">← 学习可视化</a></nav>
+<header class="hero"><div><span class="eyebrow">COLOR REFERENCE / 颜色参考</span><h1>给颜色，一个名字。</h1><p>从常用色中寻找灵感，也可以自己调出喜欢的颜色。</p></div><div class="hero-art" aria-hidden="true"><i></i><i></i><i></i><i></i></div></header>
+<section aria-labelledby="palette-title">
+<div class="section-heading"><div><span class="eyebrow">01 / COLOR PALETTE</span><h2 id="palette-title">常用色卡</h2><p>颜色相同，表达方式可以不同。选择格式，查看每个色块对应的值。</p></div><label class="format-label" for="format">显示格式<select id="format"><option value="name">Turtle 颜色名称</option><option value="rgb">RGB（0–255）</option><option value="hex">RGB 十六进制</option><option value="float">RGB 浮点数（0–1）</option><option value="percent">RGB 百分比</option><option value="cmyk">CMYK（百分比）</option></select></label></div>
+<p class="note">名称与色值参考 Python Turtle 使用的 Tk 颜色表；同名颜色在其他标准中可能不同。</p>
+<div class="palette" id="palette" aria-label="常用颜色列表"></div>
+</section>
+<section class="custom-section" aria-labelledby="custom-title"><div class="section-heading"><div><span class="eyebrow">02 / MIX YOUR OWN</span><h2 id="custom-title">自选颜色</h2><p>选取颜色或输入十六进制色值，下方跟随上面的格式同步变化。</p></div></div>
+<div class="custom-card"><div class="custom-preview" id="preview"><label for="picker">选择颜色 <span>点击色块打开取色器 ↗</span></label><input id="picker" type="color" value="#9b87f5" aria-label="选择自定义颜色"></div><div class="custom-controls"><label for="hex-input">十六进制色值</label><div class="input-row"><input id="hex-input" type="text" value="#9B87F5" maxlength="7" spellcheck="false" aria-describedby="hex-help"><button id="apply" type="button">应用</button></div><p class="field-help" id="hex-help">输入 6 位十六进制色值，如 #9B87F5。</p><div class="custom-value"><span id="custom-format">Turtle 颜色名称</span><strong id="custom-result" aria-live="polite"></strong></div><p class="note">自选颜色仅在与常用色卡中的颜色完全一致时显示名称；其余显示“无匹配名称”。</p></div></div>
+</section><footer>COLOR REFERENCE <span>·</span> 学习可视化</footer>
+</main></body></html>
