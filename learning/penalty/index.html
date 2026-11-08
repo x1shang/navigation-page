@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>点球落点预测 · 学习可视化</title>
-<meta name="description" content="输入罚球起点与 0.05 s、0.10 s 两个观测点坐标，由论文中的 11 维输入混合密度网络给出球门平面落点的概率热力图：最可能落点、50% / 95% 概率区与入门概率。">
+<meta name="description" content="输入 0.05 s、0.10 s 的球心坐标，用论文的 v3 Wiener 残差混合密度网络预测过线位置、50% / 95% 预测区域和条件门内概率。">
 <link rel="canonical" href="https://navi.x1shang.top/learning/penalty/">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="./style.css">
-<script defer src="./app.js"></script>
+<script defer src="./app.js?v=wiener-v3"></script>
 </head>
 <body>
 <main>
@@ -15,8 +15,8 @@
 
 <header class="hero">
   <span class="eyebrow">PENALTY FORECAST / 点球落点预测</span>
-  <h1>三个点，猜一个落点。</h1>
-  <p class="lede">罚球飞过 0.1 秒，留下的只是两个观测位置。把它们交给论文里冻结的那个混合密度网络，它会给出球门平面上的概率热力图：最可能从哪里穿过、五成与九成的概率区有多大、有多大概率落在门框里。</p>
+  <h1>两次观测，预测点球过线位置。</h1>
+  <p class="lede">给定罚球起点和前 0.1 秒的两个球心坐标，论文的 v3 Wiener 残差混合密度网络会估计球最可能从哪里穿过门线，以及预测有多不确定。计算在浏览器内完成。</p>
 </header>
 
 <section class="app" aria-label="点球落点预测计算器">
@@ -62,8 +62,8 @@
       <span class="control-label" id="seed-label">训练种子</span>
       <div class="chips chips--seed" role="radiogroup" aria-labelledby="seed-label" id="seed-chips">
         <label><input type="radio" name="seed" value="11" checked><span>11</span></label>
-        <label><input type="radio" name="seed" value="22"><span>22</span></label>
-        <label><input type="radio" name="seed" value="33"><span>33</span></label>
+        <label><input type="radio" name="seed" value="42"><span>42</span></label>
+        <label><input type="radio" name="seed" value="155"><span>155</span></label>
         <label><input type="radio" name="seed" value="avg"><span>三种子平均</span></label>
       </div>
     </div>
@@ -81,16 +81,16 @@
     <p class="warn" id="warn" hidden></p>
 
     <details class="derived" id="derived">
-      <summary>网络看到的 11 个特征</summary>
+      <summary>网络看到的 22 个特征</summary>
       <table><thead><tr><th>特征</th><th>数值</th><th>训练集 |z|</th></tr></thead><tbody id="feature-rows"></tbody></table>
-      <p class="note">特征由三个点作差分得到：中点速度、二阶差分加速度、速率、气动加速度的切向分量与法向模、恒加速度过门时间，再加 σ。上表右侧是该特征的训练集标准化偏差 |z|，超过 3 即明显外推。</p>
+      <p class="note">Wiener 外推锚点 <strong id="wiener-anchor">—</strong>。噪声越大，锚点越接近仅重力外推。右列为相对训练集的标准化偏差 |z|，三种子平均时显示首个种子的数值。</p>
     </details>
   </form>
 
   <figure class="board">
     <div class="board-head">
       <div><h2>球门平面上的概率密度</h2><span class="board-sub">x = 11 m 处的穿越点 (Y, Z)，球心坐标 · 门框宽 7.32 m（半宽 3.66 m）× 高 2.44 m</span></div>
-      <span class="board-badge" id="model-badge">P1 · 37650 参数</span>
+      <span class="board-badge" id="model-badge">v3 · Wiener-ResMDN</span>
     </div>
     <div class="canvas-wrap" id="canvas-wrap">
       <canvas id="heat" role="img" aria-label="球门平面落点的概率密度热力图"></canvas>
@@ -101,7 +101,7 @@
       <li><i class="sw sw--density"></i>概率密度</li>
       <li><i class="sw sw--hdr50"></i>50% 概率区</li>
       <li><i class="sw sw--hdr95"></i>95% 概率区</li>
-      <li><i class="sw sw--goal"></i>门框</li>
+      <li><i class="sw sw--goal"></i>门框内缩 0.11 m</li>
       <li><i class="sw sw--mode">+</i>众数</li>
       <li><i class="sw sw--mean">×</i>分布均值</li>
       <li><i class="sw sw--base">◇</i>恒加速度基线</li>
@@ -109,7 +109,7 @@
     <dl class="stats" id="stats">
       <div><dt>最可能落点</dt><dd id="s-mode">—</dd></div>
       <div><dt>分布均值</dt><dd id="s-mean">—</dd></div>
-      <div><dt>入门概率</dt><dd id="s-goal">—<small>空中过门条件下</small></dd></div>
+      <div><dt>条件门内概率</dt><dd id="s-goal">—<small>触地前穿越门线</small></dd></div>
       <div><dt>50% 区域</dt><dd id="s-a50">—</dd></div>
       <div><dt>95% 区域</dt><dd id="s-a95">—</dd></div>
       <div><dt>恒加速度基线</dt><dd id="s-base">—</dd></div>
@@ -119,14 +119,14 @@
 </section>
 
 <section class="method" aria-labelledby="method-title">
-  <div class="method-head"><span class="eyebrow">METHOD / 这个图是怎么来的</span><h2 id="method-title">一个网络，十一个数，三个高斯。</h2></div>
+  <div class="method-head"><span class="eyebrow">METHOD / 这个图是怎么来的</span><h2 id="method-title">从物理外推到五个高斯分量</h2></div>
   <div class="method-grid">
-    <article><h3>网络</h3><p>输入 11 维：中点速度三分量、二阶差分加速度三分量、速率、气动加速度的切向分量与法向模、恒加速度过门时间、噪声 σ。三个 128 单元的隐藏层，LayerNorm + GELU，输出 3 个带相关系数的二维高斯（混合密度网络），直接预测过门坐标。</p></article>
-    <article><h3>数据</h3><p>物理模拟器（重力 + 二次阻力 + 横向马格努斯力，RK4）生成 50,000 条罚球，其中 41,733 条在空中越过 x = 11 m。按整条轨迹划分出 33,367 条训练样本；每轮给两个观测点叠加 1–20 mm 的独立高斯噪声，并把这个 σ 一并喂给网络。</p></article>
-    <article><h3>校准</h3><p>在独立校准折上为每个噪声档拟合一个标准差缩放系数，再用真值的密度秩修正 50% / 95% 区域的阈值。本页显示的密度、区域与概率都已带上该校准。</p></article>
-    <article><h3>局限</h3><p>全部是仿真结果：先验里的初速、自旋与阻力系数并非真实罚球分布，也没有点球实测标定。图中的“入门概率”以“球已经在空中越过该平面”为前提，只算球心是否落在 7.32 × 2.44 m 的门框内（即 |Y| &lt; 3.66 m），与真实进球率不是一回事。“三种子平均”只是额外的演示选项：把三个训练种子的预测等权平均，这条平均曲线的区域覆盖没有用独立数据单独核对，论文案例仍按预选的 seed 11 报告。</p></article>
+    <article><h3>网络</h3><p>22 个特征经标准化后进入宽度为 192 的输入投影和两个残差块。网络输出五个相关二维高斯分量的权重、均值偏移和协方差。均值偏移加到按噪声加权的 Wiener 外推锚点上。</p></article>
+    <article><h3>数据</h3><p>v3 结合均匀采样与实测轨迹锚点，用重力、二次阻力和 Magnus 力模拟 1,225,000 次发射。1,091,052 条轨迹在触地前越过门线，其中 872,841 条用于训练、109,108 条独立留作测试。训练时逐轮抽取 1–18 mm 坐标噪声。</p></article>
+    <article><h3>校准</h3><p>每个训练种子分别在独立仿真校准集上调整四档噪声的预测尺度和区域阈值。三种子平均是演示选项，等权合并 15 个分量，轮廓取其 50% / 95% 概率质量，覆盖率未经独立校准。</p></article>
+    <article><h3>适用范围</h3><p>页面使用论文的空中过线主模型。门内概率假设球在触地前已穿过 x = 11 m，计算球心落在 |Y| ≤ 3.55 m、0.11 ≤ Z ≤ 2.33 m 的概率。模型省略门柱碰撞与守门员动作。真实点球的预测区域覆盖率仍待验证。</p></article>
   </div>
-  <p class="method-note">权重取自带冻结校验的 P1 模型（三个训练种子，<code>phys_reduced_k3_*</code>），在浏览器里用 32 位浮点重算，与论文 <code>student-c/P1/final/case.json</code> 的题面案例一致：5 mm 时众数 (2.62, 2.15) m、区域 0.177 / 0.775 m²、入门概率 97.3%。页内区域面积用行进方格法在细网格上重新积分，与论文表格相差约 1%。</p>
+  <p class="method-note">默认使用论文案例的 seed 11、5 mm。论文报告众数 (2.67, 1.79) m，50% / 95% 区域面积 0.106 / 0.619 m²，条件门内概率 97.7%。网页按画布网格重算等值线与面积，末位可能随画布大小略有变化。</p>
 </section>
 
 <footer>PENALTY FORECAST <span>·</span> 学习可视化</footer>

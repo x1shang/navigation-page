@@ -1,10 +1,4 @@
-/* 点球落点预测 — 在浏览器里跑论文冻结的 P1 混合密度网络。
- *
- * 三点坐标 -> 11 维物理特征 -> 标准化 -> 3 层 MLP（LayerNorm + GELU）
- *          -> 3 个二维高斯分量 + 校准尺度 -> 球门平面上的混合密度热力图。
- *
- * 权重与数值口径见 model.json 与页内「方法」一节。
- */
+/* 浏览器端复现 UPC155 v3 Wiener-ResMDN。特征与网络对应 train_wiener_mdn.py。 */
 (() => {
   'use strict';
 
@@ -12,6 +6,7 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   /* ───────────────────────────── 常量 ───────────────────────────── */
+  const MODEL_VERSION = 'wiener-v3';
   const C = {
     r0: [0, 0, 0.11],
     dt: 0.05,
@@ -19,14 +14,25 @@
     goalX: 11,
     halfWidth: 3.66,
     goalHeight: 2.44,
+    radius: 0.11,
+    kAero: 1.20 * Math.PI * 0.11 ** 2 / (2 * 0.43),
+  };
+  const FRAME = {
+    y: C.halfWidth - C.radius,
+    bottom: C.radius,
+    top: C.goalHeight - C.radius,
   };
   const CASE_POINTS = [[0, 0, 0.11], [1.5, 0.45, 0.44], [2.96, 0.86, 0.74]];
 
   const FEATURE_INFO = [
     ['v_x', 'm/s'], ['v_y', 'm/s'], ['v_z', 'm/s'],
     ['a_x', 'm/s²'], ['a_y', 'm/s²'], ['a_z', 'm/s²'],
-    ['|v|', 'm/s'], ['a∥', 'm/s²'], ['a⊥', 'm/s²'],
-    ['t 过门', 'ms'], ['σ', 'mm'],
+    ['|v|', 'm/s'], ['a∥', 'm/s²'],
+    ['a⊥,x', 'm/s²'], ['a⊥,y', 'm/s²'], ['a⊥,z', 'm/s²'], ['|a⊥|', 'm/s²'],
+    ['表观 C_D', ''], ['表观 C_L', ''],
+    ['仅重力过线时间', 's'], ['二次外推过线时间', 's'],
+    ['仅重力 Y', 'm'], ['仅重力 Z', 'm'], ['二次外推 Y', 'm'], ['二次外推 Z', 'm'],
+    ['Wiener 权重', ''], ['σ', 'mm'],
   ];
 
   const state = {
@@ -67,36 +73,45 @@
     return Number.isFinite(best) ? best : NaN;
   }
 
-  /* 三点 → 11 维特征（对应论文 common.py: physics_features + phys_reduced 列） */
+  const clip = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
+
+  /* 22 维特征与 Wiener 残差锚点，计算后按 Python 实现转为 float32。 */
   function buildFeatures(points, sigmaM) {
     const [p0, p1, p2] = points;
-    const dt2 = C.dt * C.dt;
-    const v = [
-      (p2[0] - p0[0]) / (2 * C.dt),
-      (p2[1] - p0[1]) / (2 * C.dt),
-      (p2[2] - p0[2]) / (2 * C.dt),
-    ];
-    const a = [
-      (p2[0] - 2 * p1[0] + p0[0]) / dt2,
-      (p2[1] - 2 * p1[1] + p0[1]) / dt2,
-      (p2[2] - 2 * p1[2] + p0[2]) / dt2,
-    ];
+    const dt2 = 0.0025;
+    const v = p2.map((coordinate, i) => (coordinate - p0[i]) / (2 * C.dt));
+    const a = p2.map((coordinate, i) => (coordinate - 2 * p1[i] + p0[i]) / dt2);
+    const v0 = v.map((component, i) => component - a[i] * C.dt);
     const aero = [a[0], a[1], a[2] + C.gravity];
-    const speed = Math.hypot(v[0], v[1], v[2]);
-    const inv = 1 / Math.max(speed, 1e-9);
-    const vh = [v[0] * inv, v[1] * inv, v[2] * inv];
-    const aPar = aero[0] * vh[0] + aero[1] * vh[1] + aero[2] * vh[2];
-    const aPerp = Math.hypot(
-      aero[0] - aPar * vh[0],
-      aero[1] - aPar * vh[1],
-      aero[2] - aPar * vh[2],
+    const speed = Math.hypot(...v) + 1e-8;
+    const unit = v.map((component) => component / speed);
+    const aPar = aero.reduce((sum, component, i) => sum + component * unit[i], 0);
+    const aPerp = aero.map((component, i) => component - aPar * unit[i]);
+    const perpMag = Math.hypot(...aPerp);
+    const aeroScale = C.kAero * speed ** 2;
+    const cd = clip(-aPar / aeroScale, -2, 3);
+    const cl = clip(perpMag / aeroScale, 0, 2);
+
+    const tLin = clip(C.goalX / Math.max(v[0], 6), 0.20, 1.20);
+    const yLin = v[1] * tLin;
+    const zLin = p0[2] + v[2] * tLin - 0.5 * C.gravity * tLin ** 2;
+    const vx0 = Math.max(v0[0], 6);
+    const ax = a[0];
+    const disc = vx0 ** 2 + 2 * ax * C.goalX;
+    const tQuad = (-vx0 + Math.sqrt(Math.max(disc, 4))) / (Math.abs(ax) > 1e-4 ? ax : 1);
+    const useQuadratic = Math.abs(ax) > 1e-4 && disc > 4 && tQuad > 0.18 && tQuad < 1.15;
+    const tCross = useQuadratic ? tQuad : tLin;
+    const yQuad = clip(v0[1] * tCross + 0.5 * a[1] * tCross ** 2, -8, 8);
+    const zQuad = clip(p0[2] + v0[2] * tCross + 0.5 * a[2] * tCross ** 2, -3, 8);
+
+    const accelNoise = Math.sqrt(5) * sigmaM / dt2;
+    const w = 7.5 ** 2 / (7.5 ** 2 + accelNoise ** 2);
+    const anchor = [yLin + w * (yQuad - yLin), zLin + w * (zQuad - zLin)].map(Math.fround);
+    const x = Float32Array.of(
+      ...v, ...a, speed, aPar, ...aPerp, perpMag, cd, cl,
+      tLin, tCross, yLin, zLin, yQuad, zQuad, w, sigmaM,
     );
-    const tGoal = timeToGoal(v[0] - a[0] * C.dt, a[0]);
-    return {
-      x: [v[0], v[1], v[2], a[0], a[1], a[2], speed, aPar, aPerp, tGoal, sigmaM],
-      display: [v[0], v[1], v[2], a[0], a[1], a[2], speed, aPar, aPerp, tGoal * 1000, sigmaM * 1000],
-      v, a, aero, speed, aPar, aPerp, tGoal,
-    };
+    return { x, anchor, useQuadratic };
   }
 
   /* 恒加速度解析基线 */
@@ -123,112 +138,105 @@
 
   /* ───────────────────────────── 模型 ───────────────────────────── */
   async function loadModel() {
-    const meta = await fetch('./model.json', { cache: 'force-cache' }).then((r) => {
+    const meta = await fetch('./model.json?v=' + MODEL_VERSION, { cache: 'force-cache' }).then((r) => {
       if (!r.ok) throw new Error('model.json ' + r.status);
       return r.json();
     });
-    const buf = await fetch('./' + meta.weightsFile, { cache: 'force-cache' }).then((r) => {
+    const { inputs, hidden, depth, components } = meta.arch;
+    if (meta.version !== MODEL_VERSION || inputs !== FEATURE_INFO.length) {
+      throw new Error('模型与页面版本不一致');
+    }
+    const buf = await fetch('./' + meta.weightsFile + '?sha=' + meta.weightsSha256, { cache: 'force-cache' }).then((r) => {
       if (!r.ok) throw new Error(meta.weightsFile + ' ' + r.status);
       return r.arrayBuffer();
     });
-    state.meta = meta;
-    const H = meta.arch.hidden;
+    if (buf.byteLength !== meta.weightsBytes) throw new Error('模型权重长度不符');
     for (const spec of meta.seeds) {
       const tensors = {};
       for (const t of meta.tensors) {
         tensors[t.name] = new Float32Array(buf, spec.byteOffset + t.offset, t.count);
       }
-      const block = (lin, ln, rows, cols) => ({
+      const block = (lin, ln, cols) => ({
         w: tensors[lin + '.weight'], b: tensors[lin + '.bias'],
-        g: tensors[ln + '.weight'], beta: tensors[ln + '.bias'], rows, cols,
+        g: tensors[ln + '.weight'], beta: tensors[ln + '.bias'], rows: hidden, cols,
       });
       state.models.set(String(spec.seed), {
         seed: spec.seed,
         stats: spec.stats,
         cal: spec.calibration,
-        bufA: new Float64Array(H),
-        bufB: new Float64Array(H),
-        out: new Float64Array(6 * meta.arch.components),
-        blocks: [
-          block('net.0', 'net.1', H, 11),
-          block('net.3', 'net.4', H, H),
-          block('net.6', 'net.7', H, H),
-        ],
-        head: { w: tensors['net.9.weight'], b: tensors['net.9.bias'], rows: 18, cols: H },
+        hidden: new Float64Array(hidden),
+        scratch: new Float64Array(hidden),
+        out: new Float64Array(6 * components),
+        input: block('in_proj.0', 'in_proj.1', inputs),
+        blocks: Array.from({ length: depth - 1 }, (_, i) =>
+          block(`blocks.${i}.fc`, `blocks.${i}.ln`, hidden)),
+        head: { w: tensors['head.weight'], b: tensors['head.bias'], rows: 6 * components, cols: hidden },
       });
+    }
+    state.meta = meta;
+  }
+
+  function linear({ w, b, rows, cols }, x, dst) {
+    for (let i = 0; i < rows; i++) {
+      let sum = b[i];
+      const offset = i * cols;
+      for (let j = 0; j < cols; j++) sum += w[offset + j] * x[j];
+      dst[i] = sum;
     }
   }
 
-  /* 前向：返回 18 个原始输出。两块交换缓冲，写入目标永远不是当前输入。 */
+  function project(block, x, dst) {
+    linear(block, x, dst);
+    const { rows, g, beta } = block;
+    const mean = dst.reduce((sum, value) => sum + value, 0) / rows;
+    const variance = dst.reduce((sum, value) => sum + (value - mean) ** 2, 0) / rows;
+    const inv = 1 / Math.sqrt(variance + 1e-5);
+    for (let i = 0; i < rows; i++) dst[i] = gelu((dst[i] - mean) * inv * g[i] + beta[i]);
+  }
+
   function forward(model, x) {
-    const out = model.out;
-    const bufs = [model.bufA, model.bufB];
-    let cur = x;
-    let wi = 0;
-    for (const blk of model.blocks) {
-      const { w, b: bias, g, beta, rows, cols } = blk;
-      const dst = bufs[wi];
-      for (let i = 0; i < rows; i++) {
-        let s = bias[i];
-        const off = i * cols;
-        for (let j = 0; j < cols; j++) s += w[off + j] * cur[j];
-        dst[i] = s;
-      }
-      // LayerNorm + GELU，原地
-      let mean = 0;
-      for (let i = 0; i < rows; i++) mean += dst[i];
-      mean /= rows;
-      let varr = 0;
-      for (let i = 0; i < rows; i++) { const d = dst[i] - mean; varr += d * d; }
-      const inv = 1 / Math.sqrt(varr / rows + 1e-5);
-      for (let i = 0; i < rows; i++) dst[i] = gelu((dst[i] - mean) * inv * g[i] + beta[i]);
-      cur = dst;
-      wi = 1 - wi;
+    const { hidden, scratch, out } = model;
+    project(model.input, x, hidden);
+    for (const block of model.blocks) {
+      project(block, hidden, scratch);
+      for (let i = 0; i < hidden.length; i++) hidden[i] += scratch[i];
     }
-    const head = model.head;
-    for (let i = 0; i < head.rows; i++) {
-      let s = head.b[i];
-      const off = i * head.cols;
-      for (let j = 0; j < head.cols; j++) s += head.w[off + j] * cur[j];
-      out[i] = s;
-    }
+    linear(model.head, hidden, out);
     return out;
   }
 
   /* 原始输出 → 米制分量（含校准尺度） */
-  function componentsFor(model, raw, sigmaMm) {
+  function componentsFor(model, raw, anchor, sigmaMm) {
     const cal = model.cal[String(sigmaMm)];
     if (!cal) throw new Error('缺少 ' + sigmaMm + ' mm 校准参数');
-    const scale = cal.scale;
-    const { ym, ys } = model.stats;
-    const l0 = raw[0], l1 = raw[6], l2 = raw[12];
-    const mx = Math.max(l0, l1, l2);
-    const e0 = Math.exp(l0 - mx), e1 = Math.exp(l1 - mx), e2 = Math.exp(l2 - mx);
-    const sum = e0 + e1 + e2;
-    const ws = [e0 / sum, e1 / sum, e2 / sum];
+    const scale = cal.scale_sd;
+    const logits = Array.from({ length: raw.length / 6 }, (_, k) => raw[k * 6]);
+    const maxLogit = Math.max(...logits);
+    const weights = logits.map((logit) => Math.exp(logit - maxLogit));
+    const sum = weights.reduce((a, b) => a + b, 0);
     const out = { p: [], my: [], mz: [], L00: [], L10: [], L11: [] };
-    for (let k = 0; k < 3; k++) {
+    for (let k = 0; k < weights.length; k++) {
       const o = k * 6;
-      const s0 = softplus(raw[o + 3]) + 1e-3;
-      const s1 = softplus(raw[o + 4]) + 1e-3;
-      const c = 0.995 * Math.tanh(raw[o + 5]);
-      out.p.push(ws[k]);
-      out.my.push(raw[o + 1] * ys[0] + ym[0]);
-      out.mz.push(raw[o + 2] * ys[1] + ym[1]);
-      out.L00.push(s0 * scale * ys[0]);
-      out.L10.push(c * s1 * scale * ys[1]);
-      out.L11.push(s1 * Math.sqrt(1 - c * c) * scale * ys[1]);
+      const s0 = (softplus(raw[o + 3]) + 1e-3) * scale;
+      const s1 = (softplus(raw[o + 4]) + 1e-3) * scale;
+      const c = 0.98 * Math.tanh(raw[o + 5]);
+      out.p.push(weights[k] / sum);
+      out.my.push(anchor[0] + raw[o + 1]);
+      out.mz.push(anchor[1] + raw[o + 2]);
+      out.L00.push(s0);
+      out.L10.push(c * s1);
+      out.L11.push(s1 * Math.sqrt(1 - c * c + 1e-6));
     }
     return out;
   }
 
-  /* 多种子等权合并成 3K 个分量 */
+  /* 多种子等权合并各自的分量。 */
   function mergeComponents(list) {
     if (list.length === 1) return list[0];
     const out = { p: [], my: [], mz: [], L00: [], L10: [], L11: [] };
     const n = list.length;
     for (const c of list) {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < c.p.length; k++) {
         out.p.push(c.p[k] / n);
         out.my.push(c.my[k]);
         out.mz.push(c.mz[k]);
@@ -504,23 +512,27 @@
   })();
 
   function probInside(comps, yl, yh, zl, zh) {
-    const half = 0.5 * (zh - zl);
-    const mid = 0.5 * (zh + zl);
     let total = 0;
     for (let k = 0; k < comps.p.length; k++) {
       const l00 = comps.L00[k], l10 = comps.L10[k], l11 = comps.L11[k];
       const sy = Math.abs(l00);
       const sz = Math.hypot(l10, l11);
-      const rho = l10 / Math.max(sz, 1e-12);
-      const s = sy * Math.sqrt(Math.max(1 - rho * rho, 1e-12));
+      const rho = l10 / sz;
+      const s = sy * l11 / sz;
       const my = comps.my[k], mz = comps.mz[k];
+      // Integrate in standard deviations so narrow components are resolved.
+      const lower = Math.max(-9, (zl - mz) / sz);
+      const upper = Math.min(9, (zh - mz) / sz);
+      if (lower >= upper) continue;
+      const half = (upper - lower) / 2;
+      const mid = (upper + lower) / 2;
       let acc = 0;
       for (let i = 0; i < GL.x.length; i++) {
         const z = mid + half * GL.x[i];
-        const shift = (rho * sy * (z - mz)) / sz;
+        const shift = rho * sy * z;
         const up = normCdf((yh - my - shift) / s);
         const lo = normCdf((yl - my - shift) / s);
-        const pdf = Math.exp(-0.5 * ((z - mz) / sz) ** 2) / (Math.sqrt(2 * Math.PI) * sz);
+        const pdf = Math.exp(-0.5 * z ** 2) / Math.sqrt(2 * Math.PI);
         acc += GL.w[i] * pdf * (up - lo);
       }
       total += comps.p[k] * acc * half;
@@ -571,7 +583,7 @@
   /* ───────────────────────────── 计算 ───────────────────────────── */
   function compute(aspect) {
     const feats = buildFeatures(state.points, state.sigma / 1000);
-    const seedKeys = state.seed === 'avg' ? ['11', '22', '33'] : [state.seed];
+    const seedKeys = state.seed === 'avg' ? [...state.models.keys()] : [state.seed];
     const perSeed = [];
     let maxZ = 0;
     let zscores = null;
@@ -579,18 +591,12 @@
       const model = state.models.get(key);
       if (!model) throw new Error('模型未载入');
       const { xm, xs } = model.stats;
-      const std = new Float64Array(11);
-      const zs = new Array(11);
-      for (let i = 0; i < 11; i++) {
-        let z = (feats.x[i] - xm[i]) / xs[i];
-        if (!Number.isFinite(z)) z = 0;
-        std[i] = z;
-        zs[i] = z;
-        if (i < 10) maxZ = Math.max(maxZ, Math.abs(z));
-      }
-      if (!zscores) zscores = zs;
+      const std = feats.x.map((value, i) => Math.fround(value - xm[i]) / xs[i]);
+      if (!std.every(Number.isFinite)) throw new Error('坐标数值超出计算范围');
+      for (const z of std.slice(0, -1)) maxZ = Math.max(maxZ, Math.abs(z));
+      if (!zscores) zscores = std;
       const raw = forward(model, std);
-      perSeed.push(componentsFor(model, raw, state.sigma));
+      perSeed.push(componentsFor(model, raw, feats.anchor, state.sigma));
     }
     const comps = mergeComponents(perSeed);
     const dens = prepDensity(comps);
@@ -600,12 +606,10 @@
     const ny = Math.max(200, Math.round(nx / aspect));
     const field = buildField(dens, win, nx, ny);
 
-    let m50 = 0, m95 = 0;
-    for (const key of seedKeys) {
-      const cal = state.models.get(key).cal[String(state.sigma)];
-      m50 += cal.mass50 / seedKeys.length;
-      m95 += cal.mass95 / seedKeys.length;
-    }
+    const masses = state.seed === 'avg'
+      ? { '0.5': 0.5, '0.95': 0.95 }
+      : state.models.get(state.seed).cal[String(state.sigma)].hdr_mass;
+    const m50 = masses['0.5'], m95 = masses['0.95'];
     const level50 = levelForMass(field, m50);
     const level95 = levelForMass(field, m95);
     const c50 = marchingSquares(field, level50);
@@ -626,7 +630,7 @@
       stats: {
         mode: refineMode(field, win, dens),
         mean: [my, mz],
-        pGoal: probInside(comps, -C.halfWidth, C.halfWidth, 0, C.goalHeight),
+        pGoal: probInside(comps, -FRAME.y, FRAME.y, FRAME.bottom, FRAME.top),
         a50, a95,
         base: baseline(state.points),
         m50, m95,
@@ -760,8 +764,8 @@
     g.stroke();
 
     /* 门框 */
-    const gx0 = toX(-C.halfWidth), gx1 = toX(C.halfWidth);
-    const gy0 = toY(C.goalHeight), gy1 = toY(0);
+    const gx0 = toX(-FRAME.y), gx1 = toX(FRAME.y);
+    const gy0 = toY(FRAME.top), gy1 = toY(FRAME.bottom);
     g.fillStyle = 'rgba(126,226,168,0.055)';
     g.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
     g.save();
@@ -942,6 +946,10 @@
     ctx.strokeStyle = 'rgba(126,226,168,0.85)';
     ctx.lineWidth = 1;
     ctx.strokeRect(gx0 + 0.5, gy0 + 0.5, gx1 - gx0 - 1, gy1 - gy0 - 1);
+    ctx.save();
+    ctx.setLineDash([3, 2]);
+    ctx.strokeRect(mx(-FRAME.y), my(FRAME.top), mx(FRAME.y) - mx(-FRAME.y), my(FRAME.bottom) - my(FRAME.top));
+    ctx.restore();
 
     /* 当前视野 */
     const { win } = res;
@@ -998,7 +1006,8 @@
     $('#s-mode').textContent = mode ? `(${fmt(mode[0])}, ${fmt(mode[1])}) m` : '—';
     $('#s-mean').textContent = `(${fmt(mean[0])}, ${fmt(mean[1])}) m`;
     const goalEl = $('#s-goal');
-    goalEl.innerHTML = `${(pGoal * 100).toFixed(1)}%<small>空中过门条件下</small>`;
+    const probability = pGoal > 0.999 ? '> 99.9%' : `${(pGoal * 100).toFixed(1)}%`;
+    goalEl.innerHTML = `${probability.replace('>', '&gt;')}<small>触地前穿越门线</small>`;
     goalEl.className = pGoal >= 0.5 ? 'is-goal' : 'is-miss';
     $('#s-a50').textContent = `${a50.toFixed(3)} m²`;
     $('#s-a95').textContent = `${a95.toFixed(3)} m²`;
@@ -1021,14 +1030,16 @@
     canvas.setAttribute('aria-label',
       `球门平面落点：众数 (${fmt(mode ? mode[0] : NaN)}, ${fmt(mode ? mode[1] : NaN)}) 米，`
       + `分布均值 (${fmt(mean[0])}, ${fmt(mean[1])}) 米，`
-      + `入门概率 ${(pGoal * 100).toFixed(1)}%，50% 区域 ${a50.toFixed(2)} 平方米，95% 区域 ${a95.toFixed(2)} 平方米。`);
+      + `条件门内概率 ${probability}，50% 区域 ${a50.toFixed(2)} 平方米，95% 区域 ${a95.toFixed(2)} 平方米。`);
 
+    const { anchor, x } = res.feats;
+    $('#wiener-anchor').textContent = `(${fmt(anchor[0], 3)}, ${fmt(anchor[1], 3)}) m`;
     const rows = FEATURE_INFO.map(([label, unit], i) => {
-      const raw = res.feats.display[i];
-      const digits = i >= 9 ? 0 : 2;
-      const value = Number.isFinite(raw) ? raw.toFixed(digits) + ' ' + unit : '无解';
-      const z = res.zscores ? Math.abs(res.zscores[i]) : 0;
-      return `<tr><td>${label}</td><td>${value}</td><td class="${z > 3 ? 'big' : ''}">${i < 10 ? z.toFixed(2) : '—'}</td></tr>`;
+      const raw = unit === 'mm' ? x[i] * 1000 : x[i];
+      const digits = unit === 'mm' ? 0 : 3;
+      const value = raw.toFixed(digits) + (unit ? ' ' + unit : '');
+      const z = Math.abs(res.zscores[i]);
+      return `<tr><td>${label}</td><td>${value}</td><td class="${z > 3 ? 'big' : ''}">${z.toFixed(2)}</td></tr>`;
     }).join('');
     $('#feature-rows').innerHTML = rows;
   }
@@ -1036,9 +1047,10 @@
   function warnFor(res) {
     const warn = $('#warn');
     const msgs = [];
-    if (!Number.isFinite(res.feats.tGoal)) {
-      msgs.push('这三个点推不出正向的过门时间（x 方向速度不足或无解）。网络仍会给出答案，但那已远在训练分布之外。');
-    } else if (res.maxZ > 3) {
+    if (!res.feats.useQuadratic) {
+      msgs.push('二次过线时间不满足模型的有效范围，已按训练规则回退到仅重力的过线时间。');
+    }
+    if (res.maxZ > 3) {
       msgs.push(`输入偏离训练分布较远（标准化偏差最大 ${res.maxZ.toFixed(1)}σ，参考阈值 3），结果只能当作外推参考。`);
     }
     warn.textContent = msgs.join(' ');
@@ -1076,6 +1088,9 @@
       res = compute(lastAspect);
     } catch (err) {
       console.error(err);
+      const warn = $('#warn');
+      warn.textContent = err.message;
+      warn.hidden = false;
       return;
     }
     state.last = res;
@@ -1119,7 +1134,7 @@
     const sig = Number(params.get('sigma'));
     if ([2, 5, 10, 15].includes(sig)) state.sigma = sig;
     const seed = params.get('seed');
-    if (['11', '22', '33', 'avg'].includes(seed)) state.seed = seed;
+    if (seed === 'avg' || state.models.has(seed)) state.seed = seed;
   }
 
   function applyStateToInputs() {
@@ -1229,7 +1244,7 @@
       const wz = win.zl + (1 - y / rect.height) * (win.zh - win.zl);
       state.hover = { y: wy, z: wz };
       const d = densityAt(res.dens, wy, wz);
-      const inside = Math.abs(wy) < C.halfWidth && wz > 0 && wz < C.goalHeight;
+      const inside = Math.abs(wy) <= FRAME.y && wz >= FRAME.bottom && wz <= FRAME.top;
       let band = '概率区外';
       if (d >= res.level50) band = '50% 区内';
       else if (d >= res.level95) band = '95% 区内';
@@ -1269,12 +1284,6 @@
 
   /* ───────────────────────────── 启动 ───────────────────────────── */
   async function main() {
-    readUrl();
-    applyStateToInputs();
-    buildPresets();
-    wireEvents();
-    resizeCanvas();
-    lastAspect = canvasCss.width / canvasCss.height;
     try {
       await loadModel();
     } catch (err) {
@@ -1282,10 +1291,17 @@
       $('#loading').textContent = '模型载入失败：' + err.message;
       return;
     }
+    readUrl();
+    applyStateToInputs();
+    buildPresets();
+    wireEvents();
+    resizeCanvas();
+    lastAspect = canvasCss.width / canvasCss.height;
     $('#loading').hidden = true;
-    $('#model-badge').textContent = `P1 · ${state.meta.arch.parameters.toLocaleString('en-US')} 参数`;
-    const first = $('#presets button');
-    if (first) first.setAttribute('aria-pressed', 'true');
+    $('#model-badge').textContent = `v3 · ${state.meta.arch.parameters.toLocaleString('en-US')} 参数`;
+    const matches = (preset) => preset.points.every((p, i) => p.every((value, j) => value === state.points[i][j]));
+    const active = PRESETS.find(matches);
+    if (active) $(`[data-preset="${active.id}"]`).setAttribute('aria-pressed', 'true');
     run();
   }
 
