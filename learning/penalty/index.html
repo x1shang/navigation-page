@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>点球落点预测 · 学习可视化</title>
+<meta name="description" content="输入罚球起点与 0.05 s、0.10 s 两个观测点坐标，由论文中的 11 维输入混合密度网络给出球门平面落点的概率热力图：最可能落点、50% / 95% 概率区与入门概率。">
+<link rel="canonical" href="https://navi.x1shang.top/learning/penalty/">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="./style.css">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<main>
+<nav><a href="../">← 学习可视化</a><span class="nav-note">UPC 2026 · Problem B</span></nav>
+
+<header class="hero">
+  <span class="eyebrow">PENALTY FORECAST / 点球落点预测</span>
+  <h1>三个点，猜一个落点。</h1>
+  <p class="lede">罚球飞过 0.1 秒，留下的只是两个观测位置。把它们交给论文里冻结的那个混合密度网络，它会给出球门平面上的概率热力图：最可能从哪里穿过、五成与九成的概率区有多大、有多大概率落在门框里。</p>
+</header>
+
+<section class="app" aria-label="点球落点预测计算器">
+  <form class="panel" id="panel" autocomplete="off" novalidate>
+    <div class="panel-head">
+      <h2>观测输入</h2>
+      <span class="unit-note">单位 m · 坐标系：罚球点为原点，x 指向球门，z 向上</span>
+    </div>
+
+    <div class="points" role="group" aria-labelledby="points-label">
+      <div class="points-head"><span id="points-label">球心坐标</span><span>t = 0 / 0.05 / 0.10 s</span></div>
+      <div class="points-grid">
+        <span class="axis-h"></span><span class="axis-h">x</span><span class="axis-h">y</span><span class="axis-h">z</span>
+
+        <span class="point-time">r(0)<em>固定</em></span>
+        <span class="locked">0</span><span class="locked">0</span><span class="locked">0.11</span>
+
+        <label class="point-time" for="p1x">r(0.05)<em>0.05 s</em></label>
+        <input id="p1x" data-point="1" data-axis="0" type="number" step="0.01" inputmode="decimal" value="1.50" aria-label="r(0.05 s) 的 x 坐标">
+        <input id="p1y" data-point="1" data-axis="1" type="number" step="0.01" inputmode="decimal" value="0.45" aria-label="r(0.05 s) 的 y 坐标">
+        <input id="p1z" data-point="1" data-axis="2" type="number" step="0.01" inputmode="decimal" value="0.44" aria-label="r(0.05 s) 的 z 坐标">
+
+        <label class="point-time" for="p2x">r(0.10)<em>0.10 s</em></label>
+        <input id="p2x" data-point="2" data-axis="0" type="number" step="0.01" inputmode="decimal" value="2.96" aria-label="r(0.10 s) 的 x 坐标">
+        <input id="p2y" data-point="2" data-axis="1" type="number" step="0.01" inputmode="decimal" value="0.86" aria-label="r(0.10 s) 的 y 坐标">
+        <input id="p2z" data-point="2" data-axis="2" type="number" step="0.01" inputmode="decimal" value="0.74" aria-label="r(0.10 s) 的 z 坐标">
+      </div>
+    </div>
+
+    <p class="hint" id="lock-hint">起点 r(0) 由题目固定为球心 (0, 0, 0.11)。网络以它为已知量，改动起点需要重训模型。</p>
+
+    <div class="control">
+      <span class="control-label" id="sigma-label">位置噪声 σ</span>
+      <div class="chips" role="radiogroup" aria-labelledby="sigma-label" id="sigma-chips">
+        <label><input type="radio" name="sigma" value="2"><span>2 mm</span></label>
+        <label><input type="radio" name="sigma" value="5" checked><span>5 mm</span></label>
+        <label><input type="radio" name="sigma" value="10"><span>10 mm</span></label>
+        <label><input type="radio" name="sigma" value="15"><span>15 mm</span></label>
+      </div>
+    </div>
+
+    <div class="control">
+      <span class="control-label" id="seed-label">训练种子</span>
+      <div class="chips chips--seed" role="radiogroup" aria-labelledby="seed-label" id="seed-chips">
+        <label><input type="radio" name="seed" value="11" checked><span>11</span></label>
+        <label><input type="radio" name="seed" value="22"><span>22</span></label>
+        <label><input type="radio" name="seed" value="33"><span>33</span></label>
+        <label><input type="radio" name="seed" value="avg"><span>三种子平均</span></label>
+      </div>
+    </div>
+
+    <div class="control control--presets">
+      <span class="control-label">样例</span>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn" id="copy-link">复制当前链接</button>
+      <button type="button" class="btn btn--ghost" id="reset">恢复题面案例</button>
+    </div>
+
+    <p class="warn" id="warn" hidden></p>
+
+    <details class="derived" id="derived">
+      <summary>网络看到的 11 个特征</summary>
+      <table><thead><tr><th>特征</th><th>数值</th><th>训练集 |z|</th></tr></thead><tbody id="feature-rows"></tbody></table>
+      <p class="note">特征由三个点作差分得到：中点速度、二阶差分加速度、速率、气动加速度的切向分量与法向模、恒加速度过门时间，再加 σ。上表右侧是该特征的训练集标准化偏差 |z|，超过 3 即明显外推。</p>
+    </details>
+  </form>
+
+  <figure class="board">
+    <div class="board-head">
+      <div><h2>球门平面上的概率密度</h2><span class="board-sub">x = 11 m 处的穿越点 (Y, Z)，球心坐标 · 门框 3.66 × 2.44 m</span></div>
+      <span class="board-badge" id="model-badge">P1 · 37650 参数</span>
+    </div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="heat" role="img" aria-label="球门平面落点的概率密度热力图"></canvas>
+      <div class="tip" id="tip" hidden></div>
+      <div class="loading" id="loading">载入模型权重…</div>
+    </div>
+    <ul class="legend">
+      <li><i class="sw sw--density"></i>概率密度</li>
+      <li><i class="sw sw--hdr50"></i>50% 概率区</li>
+      <li><i class="sw sw--hdr95"></i>95% 概率区</li>
+      <li><i class="sw sw--goal"></i>门框</li>
+      <li><i class="sw sw--mode">+</i>众数</li>
+      <li><i class="sw sw--mean">×</i>分布均值</li>
+      <li><i class="sw sw--base">◇</i>恒加速度基线</li>
+    </ul>
+    <dl class="stats" id="stats">
+      <div><dt>最可能落点</dt><dd id="s-mode">—</dd></div>
+      <div><dt>分布均值</dt><dd id="s-mean">—</dd></div>
+      <div><dt>入门概率</dt><dd id="s-goal">—<small>空中过门条件下</small></dd></div>
+      <div><dt>50% 区域</dt><dd id="s-a50">—</dd></div>
+      <div><dt>95% 区域</dt><dd id="s-a95">—</dd></div>
+      <div><dt>恒加速度基线</dt><dd id="s-base">—</dd></div>
+    </dl>
+    <p class="fig-note" id="fig-note"></p>
+  </figure>
+</section>
+
+<section class="method" aria-labelledby="method-title">
+  <div class="method-head"><span class="eyebrow">METHOD / 这个图是怎么来的</span><h2 id="method-title">一个网络，十一个数，三个高斯。</h2></div>
+  <div class="method-grid">
+    <article><h3>网络</h3><p>输入 11 维：中点速度三分量、二阶差分加速度三分量、速率、气动加速度的切向分量与法向模、恒加速度过门时间、噪声 σ。三个 128 单元的隐藏层，LayerNorm + GELU，输出 3 个带相关系数的二维高斯（混合密度网络），直接预测过门坐标。</p></article>
+    <article><h3>数据</h3><p>物理模拟器（重力 + 二次阻力 + 横向马格努斯力，RK4）生成 50,000 条罚球，其中 41,733 条在空中越过 x = 11 m。按整条轨迹划分出 33,367 条训练样本；每轮给两个观测点叠加 1–20 mm 的独立高斯噪声，并把这个 σ 一并喂给网络。</p></article>
+    <article><h3>校准</h3><p>在独立校准折上为每个噪声档拟合一个标准差缩放系数，再用真值的密度秩修正 50% / 95% 区域的阈值。本页显示的密度、区域与概率都已带上该校准。</p></article>
+    <article><h3>局限</h3><p>全部是仿真结果：先验里的初速、自旋与阻力系数并非真实罚球分布，也没有做过实测标定。图中的“入门概率”以“球已经在空中越过该平面”为前提，只算球心是否落在 3.66 × 2.44 m 的矩形内，与真实进球率不是一回事。</p></article>
+  </div>
+  <p class="method-note">权重取自带冻结校验的 P1 模型（三个训练种子，<code>phys_reduced_k3_*</code>），在浏览器里用 32 位浮点重算，与论文 <code>student-c/P1/final/case.json</code> 的题面案例一致：5 mm 时众数 (2.62, 2.15) m、区域 0.177 / 0.775 m²、入门概率 97.3%。页内区域面积用行进方格法在细网格上重新积分，与论文表格相差约 1%。</p>
+</section>
+
+<footer>PENALTY FORECAST <span>·</span> 学习可视化</footer>
+</main>
+</body>
+</html>
